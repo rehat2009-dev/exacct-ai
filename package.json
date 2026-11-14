@@ -1,7 +1,7 @@
 {
   "name": "exacct-ai",
   "productName": "Exacct AI",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Your AI in its own window. Pick the size, the place, the icon and the name.",
   "main": "main.js",
   "author": "Expect",
@@ -35,14 +35,36 @@
       "target": "nsis"
     },
     "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true
+      "oneClick": true,
+      "perMachine": false,
+      "runAfterFinish": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "deleteAppDataOnUninstall": false
     },
     "mac": {
       "target": "dmg",
       "category": "public.app-category.productivity",
       "identity": "-"
+    },
+    "dmg": {
+      "title": "Exacct AI",
+      "contents": [
+        {
+          "x": 150,
+          "y": 190
+        },
+        {
+          "x": 410,
+          "y": 190,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "window": {
+        "width": 560,
+        "height": 380
+      }
     }
   },
   "repository": "https://github.com/rehat2009-dev/exacct-ai"
