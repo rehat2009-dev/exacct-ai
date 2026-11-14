@@ -1,0 +1,49 @@
+{
+  "name": "exacct-ai",
+  "productName": "Exacct AI",
+  "version": "1.0.0",
+  "description": "Your AI in its own window. Pick the size, the place, the icon and the name.",
+  "main": "main.js",
+  "author": "Expect",
+  "license": "UNLICENSED",
+  "exacctAi": "chatgpt",
+  "scripts": {
+    "start": "electron .",
+    "dist:win": "electron-builder --win nsis --x64 --publish never",
+    "dist:mac": "electron-builder --mac dmg --universal --publish never"
+  },
+  "devDependencies": {
+    "electron": "33.2.1",
+    "electron-builder": "25.1.8"
+  },
+  "build": {
+    "appId": "no.expect.exacctai",
+    "directories": {
+      "output": "dist",
+      "buildResources": "."
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "bar.html",
+      "settings.html",
+      "icon.png",
+      "package.json"
+    ],
+    "icon": "icon.png",
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    },
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.productivity",
+      "identity": "-"
+    }
+  },
+  "repository": "https://github.com/rehat2009-dev/exacct-ai"
+}

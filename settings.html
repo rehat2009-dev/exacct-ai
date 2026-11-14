@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'">
+<title>Settings</title>
+<style>
+:root{--bg:#09090b;--surface:#111114;--surface-2:#18181c;--fg:#f4f4f5;--muted:#8b8b94;--line:rgba(255,255,255,.09);--accent:#8b5cf6;--brass:#d6a35c}
+*{box-sizing:border-box}
+html,body{margin:0;overflow-x:hidden;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+body{padding:22px 22px 40px;background:radial-gradient(60% 30% at 50% 0%,color-mix(in srgb,var(--accent) 25%,transparent),transparent 70%),var(--bg)}
+h1{font-size:22px;font-weight:800;letter-spacing:-.02em;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 20px;font-size:13px}
+section{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px;display:flex;flex-direction:column;gap:12px;animation:in .4s ease both}
+section:nth-of-type(2){animation-delay:.05s}section:nth-of-type(3){animation-delay:.1s}section:nth-of-type(4){animation-delay:.15s}section:nth-of-type(5){animation-delay:.2s}
+@keyframes in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+h2{margin:0;font-size:11px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--brass)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+input[type=text],input[type=number]{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 11px;width:100%}
+input:focus{outline:none;border-color:var(--accent)}
+.chip{font:inherit;font-size:13px;font-weight:600;border-radius:999px;padding:8px 14px;border:1px solid var(--line);background:var(--surface-2);color:var(--fg);cursor:pointer;transition:all .15s}
+.chip:hover{border-color:rgba(255,255,255,.25)}
+.chip.on{background:#fff;color:#0a0a0b;border-color:#fff}
+.chip:active{transform:scale(.95)}
+.sw{width:30px;height:30px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0;transition:transform .15s}
+.sw.on{border-color:#fff;transform:scale(1.12)}
+.iconrow{display:flex;gap:16px;align-items:center}
+canvas,#preview{width:84px;height:84px;border-radius:20px;flex:none;background:var(--surface-2)}
+.iconctl{display:flex;flex-direction:column;gap:10px;flex:1;min-width:0}
+.pos{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:180px;aspect-ratio:16/10;padding:8px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.pos button{border:1px dashed var(--line);border-radius:6px;background:transparent;cursor:pointer;transition:all .15s}
+.pos button:hover{background:rgba(255,255,255,.06)}
+.pos button.on{background:var(--accent);border:1px solid var(--accent);box-shadow:0 0 14px color-mix(in srgb,var(--accent) 60%,transparent)}
+.hint{font-size:12px;color:var(--muted)}
+.toggle{display:flex;justify-content:space-between;align-items:center;gap:12px;cursor:pointer}
+.toggle input{display:none}
+.toggle .t{width:42px;height:24px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);position:relative;transition:background .2s;flex:none}
+.toggle .t::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s}
+.toggle input:checked+.t{background:var(--accent);border-color:var(--accent)}
+.toggle input:checked+.t::after{transform:translateX(18px)}
+.toggle small{display:block;color:var(--muted);font-size:12px}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.wh{display:flex;gap:8px;align-items:center}
+.wh input{width:90px}
+.saved{position:fixed;right:18px;bottom:18px;background:#fff;color:#0a0a0b;border-radius:999px;padding:8px 14px;font-weight:600;font-size:12px;opacity:0;transform:translateY(8px);transition:.25s;pointer-events:none}
+.saved.show{opacity:1;transform:none}
+</style>
+</head>
+<body>
+<h1>Make it yours</h1>
+<p class="sub">Changes are saved right away.</p>
+
+<section>
+  <h2>Your AI</h2>
+  <input type="text" id="name" maxlength="40" placeholder="Name your AI" aria-label="AI name">
+  <div class="row" id="ais"></div>
+</section>
+
+<section>
+  <h2>Icon</h2>
+  <div class="iconrow">
+    <canvas id="cv" width="256" height="256"></canvas>
+    <div class="iconctl">
+      <input type="text" id="glyph" maxlength="2" placeholder="Letters on the icon" aria-label="Icon letters">
+      <div class="row" id="icolors"></div>
+      <div class="row" id="ishapes"></div>
+    </div>
+  </div>
+  <div class="row">
+    <button class="chip" id="useIcon">Use this icon</button>
+    <button class="chip" id="upload">Upload image…</button>
+    <button class="chip" id="defIcon">Default</button>
+  </div>
+</section>
+
+<section>
+  <h2>Size</h2>
+  <div class="row" id="sizes"></div>
+  <div class="wh" id="custom"><input type="number" id="w" min="360" aria-label="Width"> × <input type="number" id="h" min="400" aria-label="Height"><button class="chip" id="applyWH">Set</button></div>
+</section>
+
+<section>
+  <h2>Place on screen</h2>
+  <div class="row" style="gap:16px;align-items:flex-start">
+    <div class="pos" id="pos"></div>
+    <p class="hint" style="flex:1;margin:0">Pick a spot, or drag the window by its top bar to put it anywhere. It remembers where you leave it.</p>
+  </div>
+</section>
+
+<section>
+  <h2>Look</h2>
+  <div class="row" id="accents"></div>
+  <label>Window see-through <span id="opv"></span>
+    <input type="range" id="op" min="40" max="100" step="5"></label>
+</section>
+
+<section>
+  <h2>Behaviour</h2>
+  <label class="toggle"><span>Keep on top<small>Stays above your other windows</small></span><input type="checkbox" id="top"><span class="t"></span></label>
+  <label class="toggle"><span>Show / hide shortcut<small id="hk"></small></span><input type="checkbox" id="hot"><span class="t"></span></label>
+  <label class="toggle"><span>Start with computer<small>Opens when you log in</small></span><input type="checkbox" id="start"><span class="t"></span></label>
+</section>
+
+<div class="row"><button class="chip" id="reset">Reset all settings</button></div>
+<div class="saved" id="saved">Saved</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const COLORS=[["#8b5cf6","#ec4899"],["#10a37f","#0b6e56"],["#d97757","#b4533a"],["#4f8cff","#a855f7"],["#06b6d4","#2563eb"],["#f59e0b","#ef4444"],["#22c55e","#0ea5e9"],["#3f3f46","#09090b"],["#e11d48","#7c3aed"],["#eab308","#f97316"]];
+const ACCENTS=["#8b5cf6","#ec4899","#10a37f","#d97757","#4f8cff","#06b6d4","#f59e0b","#ef4444","#22c55e","#e4e4e7"];
+const SHAPES=["Rounded","Circle","Squircle","Diamond"];
+const SIZES=[["small","Small"],["medium","Medium"],["large","Large"],["full","Full screen"],["custom","Custom"]];
+const POS=["tl","tc","tr","ml","center","mr","bl","bc","br"];
+let c={}, ic={col:0,shape:"Rounded",glyph:""};
+
+function flash(){const s=$("saved");s.classList.add("show");clearTimeout(flash.t);flash.t=setTimeout(()=>s.classList.remove("show"),900)}
+async function set(p){c=await exacct.set(p);paint();flash()}
+
+function drawIcon(){
+  const cv=$("cv"),x=cv.getContext("2d"),S=256,[a,b]=COLORS[ic.col];
+  x.clearRect(0,0,S,S);
+  const g=x.createLinearGradient(0,0,S,S);g.addColorStop(0,a);g.addColorStop(1,b);x.fillStyle=g;
+  x.save();
+  if(ic.shape==="Circle"){x.beginPath();x.arc(S/2,S/2,S/2,0,7);x.fill()}
+  else if(ic.shape==="Diamond"){x.translate(S/2,S/2);x.rotate(Math.PI/4);rr(x,-S*.35,-S*.35,S*.7,S*.7,36);x.fill();x.setTransform(1,0,0,1,0,0)}
+  else{rr(x,0,0,S,S,ic.shape==="Squircle"?96:56);x.fill()}
+  x.restore();
+  const t=(ic.glyph||c.name||"E").trim().slice(0,2)||"E";
+  x.fillStyle="#fff";x.textAlign="center";x.textBaseline="middle";
+  x.font=`800 ${t.length>1?104:136}px system-ui,-apple-system,"Segoe UI",sans-serif`;
+  x.shadowColor="rgba(0,0,0,.25)";x.shadowBlur=18;x.shadowOffsetY=6;
+  x.fillText(t,S/2,S/2+6);
+}
+function rr(x,X,Y,W,H,R){x.beginPath();x.moveTo(X+R,Y);x.arcTo(X+W,Y,X+W,Y+H,R);x.arcTo(X+W,Y+H,X,Y+H,R);x.arcTo(X,Y+H,X,Y,R);x.arcTo(X,Y,X+W,Y,R);x.closePath()}
+
+function paint(){
+  document.documentElement.style.setProperty("--accent",c.accent);
+  if(document.activeElement!==$("name"))$("name").value=c.name;
+  $("ais").innerHTML=Object.entries(c.ais).map(([k,v])=>`<button class="chip ${c.ai===k?"on":""}" data-ai="${k}">${v}</button>`).join("");
+  $("sizes").innerHTML=SIZES.map(([k,v])=>`<button class="chip ${c.size===k?"on":""}" data-size="${k}">${v}</button>`).join("");
+  $("custom").style.display=c.size==="custom"?"flex":"none";
+  if(document.activeElement!==$("w"))$("w").value=c.width; if(document.activeElement!==$("h"))$("h").value=c.height;
+  $("pos").innerHTML=POS.map(p=>`<button class="${c.position===p?"on":""}" data-pos="${p}" aria-label="${p}"></button>`).join("");
+  $("accents").innerHTML=ACCENTS.map(a=>`<button class="sw ${c.accent===a?"on":""}" data-accent="${a}" style="background:${a}" aria-label="Accent ${a}"></button>`).join("");
+  $("op").value=c.opacity;$("opv").textContent=c.opacity+"%";
+  $("top").checked=c.alwaysOnTop;$("hot").checked=c.hotkey;$("start").checked=c.startup;$("hk").textContent=c.hotkeyLabel;
+  $("icolors").innerHTML=COLORS.map((p,i)=>`<button class="sw ${ic.col===i?"on":""}" data-icol="${i}" style="background:linear-gradient(135deg,${p[0]},${p[1]})" aria-label="Icon colour ${i+1}"></button>`).join("");
+  $("ishapes").innerHTML=SHAPES.map(s=>`<button class="chip ${ic.shape===s?"on":""}" data-ishape="${s}">${s}</button>`).join("");
+  drawIcon();
+}
+
+document.addEventListener("click",e=>{
+  const t=e.target.closest("button");if(!t)return;
+  const d=t.dataset;
+  if(d.ai)set({ai:d.ai});
+  if(d.size)set(d.size==="custom"?{size:"custom"}:{size:d.size});
+  if(d.pos)set({position:d.pos});
+  if(d.accent)set({accent:d.accent});
+  if(d.icol){ic.col=+d.icol;paint()}
+  if(d.ishape){ic.shape=d.ishape;paint()}
+});
+$("name").addEventListener("change",e=>set({name:e.target.value.trim()||"Exacct AI"}));
+$("glyph").addEventListener("input",e=>{ic.glyph=e.target.value;drawIcon()});
+$("applyWH").onclick=()=>set({size:"custom",width:+$("w").value||820,height:+$("h").value||720});
+$("op").addEventListener("input",e=>{$("opv").textContent=e.target.value+"%"});
+$("op").addEventListener("change",e=>set({opacity:+e.target.value}));
+$("top").onchange=e=>set({alwaysOnTop:e.target.checked});
+$("hot").onchange=e=>set({hotkey:e.target.checked});
+$("start").onchange=e=>set({startup:e.target.checked});
+$("useIcon").onclick=()=>set({icon:$("cv").toDataURL("image/png")});
+$("upload").onclick=async()=>{const d=await exacct.pickIcon();if(d)set({icon:d})};
+$("defIcon").onclick=()=>set({icon:null});
+let arm=false;
+$("reset").onclick=async()=>{
+  if(!arm){arm=true;$("reset").textContent="Click again to reset";setTimeout(()=>{arm=false;$("reset").textContent="Reset all settings"},2500);return}
+  c=await exacct.reset();arm=false;$("reset").textContent="Reset all settings";paint();flash();
+};
+exacct.get().then(v=>{c=v;paint()});
+exacct.onCfg(v=>{c=v;paint()});
+</script>
+</body>
+</html>
