@@ -1,0 +1,73 @@
+# Builds Exacct AI for Windows and Mac, for ChatGPT, Claude and Gemini,
+# and puts the 6 files on the GitHub Releases page.
+# Start it: push a tag like v1.0.0, or press "Run workflow" on the Actions tab.
+name: Build Exacct AI
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+        ai:
+          - { id: chatgpt, label: ChatGPT }
+          - { id: claude,  label: Claude }
+          - { id: gemini,  label: Gemini }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-audit --no-fund
+
+      - name: Build Windows installer
+        if: runner.os == 'Windows'
+        shell: bash
+        run: >
+          npx electron-builder --win nsis --x64 --publish never
+          -c.extraMetadata.exacctAi=${{ matrix.ai.id }}
+          -c.productName="Exacct AI ${{ matrix.ai.label }}"
+          -c.appId=no.expect.exacctai.${{ matrix.ai.id }}
+          -c.artifactName="Exacct-AI-${{ matrix.ai.label }}-Windows.exe"
+
+      - name: Build Mac app
+        if: runner.os == 'macOS'
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+        run: >
+          npx electron-builder --mac dmg --universal --publish never
+          -c.extraMetadata.exacctAi=${{ matrix.ai.id }}
+          -c.productName="Exacct AI ${{ matrix.ai.label }}"
+          -c.appId=no.expect.exacctai.${{ matrix.ai.id }}
+          -c.artifactName="Exacct-AI-${{ matrix.ai.label }}-Mac.dmg"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exacct-${{ matrix.ai.id }}-${{ runner.os }}
+          path: |
+            dist/*.exe
+            dist/*.dmg
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Exacct AI
+          make_latest: true
+          files: out/*
