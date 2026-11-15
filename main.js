@@ -572,6 +572,40 @@ function signIn(ai) {
   switchAI(ai);
   views[ai].webContents.loadURL(AUTH[ai].login).catch(() => {});
 }
+// "Use email": opens the sign-in page, presses "Log in" if needed and puts the cursor in the email box
+const EMAIL_STEP = `(function(){
+  function vis(e){ return e && e.offsetParent !== null && !e.disabled; }
+  var inp = Array.prototype.slice.call(document.querySelectorAll('input[type=email],input[name=email],input[name=username],input[autocomplete=email],input[autocomplete=username],input#email,input#email-input')).find(vis);
+  if (inp) { inp.scrollIntoView({ block: 'center' }); inp.focus(); inp.style.outline = '3px solid #8b5cf6'; inp.style.outlineOffset = '2px'; return 'focused'; }
+  var b = Array.prototype.slice.call(document.querySelectorAll('button,a')).find(function(x){
+    var t = (x.textContent || '').trim();
+    return vis(x) && (x.getAttribute('data-testid') === 'login-button' || /^(log in|logg inn|sign in|logg på|continue with email|fortsett med e-post)$/i.test(t));
+  });
+  if (b) { b.click(); return 'clicked'; }
+  return 'wait';
+})()`;
+let emailRun = 0;
+async function emailLogin(ai) {
+  if (!AIS[ai]) return;
+  const run = ++emailRun;
+  ui.notice = false; layout();
+  switchAI(ai);
+  const wc = views[ai].webContents;
+  toast("Type your email – don't press Google");
+  wc.loadURL(AUTH[ai].login).catch(() => {});
+  const end = Date.now() + 25000;
+  let pause = 0;
+  while (Date.now() < end && run === emailRun && !wc.isDestroyed()) {
+    await new Promise(r => setTimeout(r, pause || 700)); pause = 0;
+    if (wc.isLoading()) continue;
+    let r = "wait";
+    try { r = await wc.executeJavaScript(EMAIL_STEP, true); } catch {}
+    if (r === "focused") { wc.focus(); return true; }
+    if (r === "clicked") pause = 1800;
+  }
+  return false;
+}
+
 async function signOut(ai) {
   if (!AIS[ai]) return;
   const s = ses();
@@ -681,6 +715,7 @@ const H = {
   find: (text, back) => find(text, back),
   findStop: () => { find(""); const wc = current(); if (wc) wc.focus(); },
   signIn: ai => signIn(ai),
+  emailLogin: ai => emailLogin(ai),
   signOut: ai => signOut(ai),
   askOne: (ai, text) => askOne(ai, String(text || "").trim()),
   openAppWindow: ai => { if (!AIS[ai]) return; ui.notice = false; layout(); const r = openAppWindow(ai); toast("Opening " + AIS[ai].label + " in its own window"); return r; },

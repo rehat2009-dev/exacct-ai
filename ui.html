@@ -667,7 +667,7 @@ window.exacct.on("notice", function(d){
   placeNotice(); $("notice").hidden = false;
 });
 $("noticeOpen").onclick = function(){ $("notice").hidden = true; call("openAppWindow", noticeAi); };
-$("noticeEmail").onclick = function(){ $("notice").hidden = true; call("closeNotice"); call("signIn", noticeAi); };
+$("noticeEmail").onclick = function(){ $("notice").hidden = true; call("emailLogin", noticeAi); };
 $("noticeX").onclick = function(){ $("notice").hidden = true; call("closeNotice"); };
 
 window.exacct.on("find", openFind);
