@@ -277,9 +277,12 @@ var I = {
   bolt: "<path d=\"M9 1.5 3.5 9H8l-1 5.5L12.5 7H8z\"/>",
   mini: "<rect x=\"1.8\" y=\"2.5\" width=\"12.4\" height=\"11\" rx=\"2\"/><rect x=\"8.3\" y=\"8\" width=\"4.4\" height=\"3.6\" rx=\"1\" fill=\"currentColor\"/>",
   pin: "<path d=\"M6 2h4l-.5 4 2.5 2.5H4L6.5 6zM8 8.5V14\"/>",
-  swap: "<path d=\"M3 5h9l-2.5-2.5M13 11H4l2.5 2.5\"/>"
+  swap: "<path d=\"M3 5h9l-2.5-2.5M13 11H4l2.5 2.5\"/>",
+  chat: "<path d=\"M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z\"/>",
+  cols: "<rect x=\"1.8\" y=\"2.5\" width=\"12.4\" height=\"11\" rx=\"2\"/><path d=\"M6 2.5v11M10 2.5v11\"/>",
+  goal: "<circle cx=\"8\" cy=\"8\" r=\"6\"/><circle cx=\"8\" cy=\"8\" r=\"2.5\"/>"
 };
-var FEATS = [["key","Stay signed in"],["swap","Switch AI fast"],["clock","Chat history"],["bolt","Saved prompts"],["mini","Mini mode"],["pin","Keep on top"]];
+var FEATS = [["chat","Ask all 3"],["cols","Side by side"],["key","Stay signed in"],["swap","Switch AI fast"],["clock","Chat history"],["goal","Daily goal"],["bolt","Saved prompts"],["mini","Mini mode"]];
 $("feats").innerHTML = FEATS.map(function(f){ return "<div class=\"feat\"><svg viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\">" + I[f[0]] + "</svg>" + f[1] + "</div>"; }).join("");
 
 /* downloads */

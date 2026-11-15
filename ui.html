@@ -51,6 +51,26 @@ button{cursor:pointer}
 @media (max-width:700px){.hs{display:none!important}.switch button{padding:6px 10px}}
 @media (max-width:480px){.hm{display:none!important}.switch button span.lb{display:none}.switch button{padding:7px 9px}}
 
+/* ask all + columns */
+.ask{position:fixed;top:var(--top);left:0;right:0;height:54px;z-index:9;display:flex;align-items:center;gap:8px;padding:0 12px;background:#0d0c12;border-bottom:1px solid var(--line);animation:up .25s ease both}
+.ask input{flex:1;min-width:0;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:10px 16px;outline:none;font-weight:600}
+.ask input:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+.ask .go{border:0;border-radius:999px;padding:10px 18px;font-weight:800;background:linear-gradient(90deg,var(--accent),var(--pink));color:#fff;white-space:nowrap}
+.ask .dots3{display:flex;gap:4px}.ask .dots3 i{width:8px;height:8px;border-radius:50%}
+.cols{position:fixed;left:0;right:0;height:30px;z-index:8}
+.col{position:absolute;top:0;height:30px;display:flex;align-items:center;gap:7px;padding:0 10px;font-size:12px;font-weight:700;color:var(--muted);background:#0d0c12;border-bottom:1px solid var(--line);border-right:1px solid var(--line);cursor:pointer;transition:color .2s}
+.col.on{color:var(--fg);box-shadow:inset 0 -2px 0 var(--accent)}
+.col i{width:8px;height:8px;border-radius:50%;flex:none}
+.col .cy{margin-left:auto;border:0;background:none;color:var(--muted);font-size:13px;padding:2px 6px;border-radius:6px}
+.col .cy:hover{background:rgba(255,255,255,.08);color:var(--fg)}
+.upd{border:0;border-radius:999px;padding:6px 12px;font-weight:800;font-size:12px;background:var(--gold);color:#0b0b0f;animation:glow 2s ease-in-out infinite}
+@keyframes glow{50%{box-shadow:0 0 16px var(--gold)}}
+.goal{height:6px;border-radius:9px;background:rgba(255,255,255,.06);overflow:hidden;margin-top:10px}
+.goal i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--gold));border-radius:9px;transition:width .5s}
+.hitem .pin{opacity:0;border:0;background:none;color:var(--muted);padding:0 2px;font-size:14px}
+.hitem:hover .pin,.hitem .pin.on{opacity:1}
+.hitem .pin.on{color:var(--gold)}
+
 /* stage behind the AI */
 .stage{position:fixed;inset:var(--top) 0 0 0;display:grid;place-items:center}
 .stage img{width:90px;height:90px;opacity:.5;animation:float 3s ease-in-out infinite}
@@ -176,6 +196,9 @@ kbd{font:600 11px/1 system-ui,sans-serif;background:var(--card2);border:1px soli
     <button class="ib hs" id="b-home" title="New chat"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg></button>
     <button class="ib hs" id="b-reload" title="Reload"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 8a5 5 0 1 1-1.5-3.6M13 2.5V5h-2.5"/></svg></button>
     <span class="sep hs"></span>
+    <button class="upd" id="b-upd" hidden>Update</button>
+    <button class="ib" id="t-ask" title="Ask all 3"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z"/><path d="M5.5 7h.01M8 7h.01M10.5 7h.01"/></svg></button>
+    <button class="ib hm" id="b-split" title="Side by side"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="1.8" y="2.5" width="12.4" height="11" rx="2"/><path d="M6 2.5v11M10 2.5v11"/></svg></button>
     <button class="ib" id="t-chats" title="Chats and time used"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.3 1.5"/></svg></button>
     <button class="ib hm" id="t-prompts" title="Prompts"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M9 1.5 3.5 9H8l-1 5.5L12.5 7H8z"/></svg></button>
     <button class="ib" id="t-layout" title="Size and place"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="1.8" y="2.5" width="12.4" height="11" rx="2"/><path d="M8 2.5v11M8 8h6.2"/></svg></button>
@@ -190,6 +213,8 @@ kbd{font:600 11px/1 system-ui,sans-serif;background:var(--card2);border:1px soli
   <div class="toast" id="toast"></div>
 </header>
 <div class="loadbar"><i></i></div>
+<form class="ask" id="ask" hidden><span class="dots3"><i style="background:#10a37f"></i><i style="background:#d97757"></i><i style="background:#4f8cff"></i></span><input id="askIn" placeholder="Ask all 3 at once" autocomplete="off"><button class="go" type="submit">Ask all</button><button class="ib" type="button" id="askX" title="Close"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m4 4 8 8M12 4l-8 8"/></svg></button></form>
+<div class="cols" id="cols" hidden></div>
 <div class="stage"><img id="stageIcon" alt=""></div>
 
 <aside class="drawer" id="drawer" aria-label="Panel">
@@ -244,8 +269,10 @@ function render(){
       sw.appendChild(b);
     });
   }
-  Array.prototype.forEach.call(sw.querySelectorAll("button"), function(b){ b.classList.toggle("on", b.dataset.ai === c.ai); });
-  movePill();
+  Array.prototype.forEach.call(sw.querySelectorAll("button"), function(b){ b.classList.toggle("on", b.dataset.ai === (S.focused || c.ai)); });
+  $("b-split").classList.toggle("on", c.split > 1);
+  $("b-upd").hidden = !S.update; if (S.update) $("b-upd").title = "Version " + S.update + " is ready";
+  movePill(); drawCols();
   ["chats","prompts","layout","style"].forEach(function(t){ $("t-" + t).classList.toggle("on", open && tab === t); });
   if (open) renderTab();
 }
@@ -264,6 +291,39 @@ $("b-pin").onclick = function(){ call("act", "pin"); };
 $("b-min").onclick = function(){ call("act", "min"); };
 $("b-max").onclick = function(){ call("act", "max"); };
 $("b-close").onclick = function(){ call("act", "close"); };
+$("b-split").onclick = function(){ call("split", S.cfg.split >= 3 ? 1 : S.cfg.split + 1); };
+$("b-upd").onclick = function(){ call("openUpdate"); };
+$("t-ask").onclick = function(){ toggleAsk(); };
+$("askX").onclick = function(){ toggleAsk(false); };
+var askOpen = false;
+function toggleAsk(v){
+  askOpen = v === undefined ? !askOpen : v;
+  $("ask").hidden = !askOpen; $("t-ask").classList.toggle("on", askOpen);
+  call("ui", { ask: askOpen });
+  if (askOpen) setTimeout(function(){ $("askIn").focus(); }, 50);
+}
+$("ask").onsubmit = function(e){
+  e.preventDefault();
+  var t = $("askIn").value.trim(); if (!t) return;
+  $("askIn").value = ""; call("askAll", t);
+};
+
+/* ---------- side by side ---------- */
+var COLS = { cols: [], top: 52, focused: null };
+function drawCols(){
+  var el = $("cols");
+  if (!S || COLS.cols.length < 2) { el.innerHTML = ""; el.hidden = true; return; }
+  el.hidden = false; el.style.top = COLS.top + "px";
+  el.innerHTML = COLS.cols.map(function(c, i){
+    var a = aiOf(c.ai);
+    return "<div class=\"col" + (c.ai === COLS.focused ? " on" : "") + "\" data-col=\"" + c.ai + "\" style=\"left:" + c.x + "px;width:" + c.width + "px\"><i style=\"background:" + a.color + "\"></i>" + a.label +
+      (S.cfg.split === 2 && i === 1 ? "<button class=\"cy\" data-cy=\"1\" title=\"Change AI\">&#8644;</button>" : "") + "</div>";
+  }).join("");
+}
+$("cols").addEventListener("click", function(e){
+  if (e.target.dataset.cy) { call("cycleSecond"); return; }
+  var c = e.target.closest(".col"); if (c) call("focusCol", c.dataset.col);
+});
 ["chats","prompts","layout","style"].forEach(function(t){ $("t-" + t).onclick = function(){ toggleDrawer(t); }; });
 
 /* ---------- drawer ---------- */
@@ -277,7 +337,7 @@ function openDrawer(t){
 function closeDrawer(){ open = false; $("drawer").classList.remove("open"); call("ui", { drawer: false }); render(); }
 $("d-close").onclick = closeDrawer;
 Array.prototype.forEach.call(document.querySelectorAll(".tab"), function(b){ b.onclick = function(){ tab = b.dataset.tab; render(); }; });
-document.addEventListener("keydown", function(e){ if (e.key === "Escape" && open) closeDrawer(); });
+document.addEventListener("keydown", function(e){ if (e.key === "Escape") { if (open) closeDrawer(); else if (askOpen) toggleAsk(false); } });
 
 function renderTab(){
   Array.prototype.forEach.call(document.querySelectorAll(".tab"), function(b){ b.classList.toggle("on", b.dataset.tab === tab); });
@@ -309,9 +369,13 @@ function renderChats(){
   body.innerHTML =
     "<div class=\"sec\"><div class=\"card\"><div class=\"stat\"><div><div class=\"muted\">Today</div><div class=\"big\">" + dur(today) + "</div><div class=\"muted\">" + dur(week) + " this week</div></div><div class=\"bars\">" + bars + "</div></div>" +
     (week ? "<div class=\"split\">" + split + "</div><div class=\"legend\">" + legend + "</div>" : "") + "</div></div>" +
+    "<div class=\"sec\"><div class=\"card\"><div class=\"row\" style=\"justify-content:space-between\"><b>Daily goal</b><span class=\"muted\">" + (S.cfg.goal ? dur(today) + " / " + dur(S.cfg.goal * 60) : "Off") + "</span></div>" +
+      (S.cfg.goal ? "<div class=\"goal\"><i style=\"width:" + Math.min(100, today / (S.cfg.goal * 60) * 100) + "%\"></i></div>" : "") +
+      "<div class=\"row\" style=\"margin-top:10px;gap:6px\">" + [[0,"Off"],[30,"30m"],[60,"1h"],[120,"2h"],[180,"3h"]].map(function(g){ return "<button class=\"chip" + (S.cfg.goal === g[0] ? " on" : "") + "\" data-goal=\"" + g[0] + "\">" + g[1] + "</button>"; }).join("") + "</div></div></div>" +
     "<div class=\"sec\"><input class=\"field\" id=\"q\" placeholder=\"Search your chats\" value=\"" + esc(q) + "\"><div id=\"hlist\"></div></div>" +
     "<div class=\"sec\"><div class=\"row\"><button class=\"chip\" id=\"clearH\">" + (armed.clear ? "Click again to clear" : "Clear history") + "</button></div></div>";
   $("q").oninput = function(e){ q = e.target.value; renderList(); };
+  Array.prototype.forEach.call(body.querySelectorAll("[data-goal]"), function(b){ b.onclick = function(){ set({ goal: +b.dataset.goal, goalDay: "" }); }; });
   $("clearH").onclick = function(){
     if (!armed.clear) { armed.clear = true; renderChats(); setTimeout(function(){ armed.clear = false; if (tab === "chats" && open) renderChats(); }, 2500); return; }
     armed.clear = false; call("clearHistory"); toast("History cleared");
@@ -325,18 +389,24 @@ function renderList(){
   var now = new Date(), t0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   var groups = [["Today", t0], ["Yesterday", t0 - 864e5], ["This week", t0 - 6 * 864e5], ["Earlier", 0]];
   var html = "", gi = -1;
-  list.slice(0, 200).forEach(function(h){
+  var pins = list.filter(function(h){ return h.pinned; });
+  if (pins.length) { html += "<div class=\"group\">Pinned</div>"; pins.forEach(function(h){ html += itemHtml(h, new Date(h.time).toLocaleDateString([], { day: "numeric", month: "short" })); }); }
+  list.filter(function(h){ return !h.pinned; }).slice(0, 200).forEach(function(h){
     var g = 0; while (h.time < groups[g][1]) g++;
     if (g !== gi) { gi = g; html += "<div class=\"group\">" + groups[g][0] + "</div>"; }
     var d = new Date(h.time);
     var tm = g < 2 ? d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : d.toLocaleDateString([], { day: "numeric", month: "short" });
-    html += "<button class=\"hitem\" data-url=\"" + esc(h.url) + "\" data-ai=\"" + h.ai + "\"><i class=\"d\" style=\"background:" + aiOf(h.ai).color + "\"></i><span class=\"tt\">" + esc(h.title) + "</span><span class=\"tm\">" + tm + "</span><span class=\"x\" data-rm=\"1\" title=\"Remove\">&times;</span></button>";
+    html += itemHtml(h, tm);
   });
   el.innerHTML = html;
+}
+function itemHtml(h, tm){
+  return "<button class=\"hitem\" data-url=\"" + esc(h.url) + "\" data-ai=\"" + h.ai + "\"><i class=\"d\" style=\"background:" + aiOf(h.ai).color + "\"></i><span class=\"tt\">" + esc(h.title) + "</span><span class=\"tm\">" + tm + "</span><span class=\"pin" + (h.pinned ? " on" : "") + "\" data-pin=\"1\" title=\"Pin\">&#9733;</span><span class=\"x\" data-rm=\"1\" title=\"Remove\">&times;</span></button>";
 }
 $("dbody").addEventListener("click", function(e){
   var it = e.target.closest(".hitem"); if (!it) return;
   if (e.target.dataset.rm) { call("removeHistory", it.dataset.url); return; }
+  if (e.target.dataset.pin) { call("pinHistory", it.dataset.url); return; }
   call("open", it.dataset.ai, it.dataset.url);
   if (window.innerWidth < 760) closeDrawer();
 });
@@ -384,6 +454,7 @@ function renderLayout(){
   var c = S.cfg, body = $("dbody");
   var fixed = ["mini","small","medium","large","xl","custom"].indexOf(c.size) > -1;
   body.innerHTML =
+    "<div class=\"sec\"><div class=\"lbl\">Side by side</div><div class=\"row\">" + [[1,"One AI"],[2,"Two"],[3,"All three"]].map(function(s){ return "<button class=\"chip" + (c.split === s[0] ? " on" : "") + "\" data-split=\"" + s[0] + "\">" + s[1] + "</button>"; }).join("") + "</div></div>" +
     "<div class=\"sec\"><div class=\"lbl\">Size</div><div class=\"tiles\">" + TILES.map(function(t){ return tileHtml(t[0], t[1], c.size === t[0]); }).join("") + "</div></div>" +
     "<div class=\"sec\"><div class=\"lbl\">Place</div><div class=\"row\" style=\"gap:14px;align-items:flex-start\"><div class=\"pos\">" +
       POS.map(function(p){ return "<button data-pos=\"" + p + "\" class=\"" + (fixed && c.position === p ? "on" : "") + "\" aria-label=\"" + p + "\"></button>"; }).join("") +
@@ -394,6 +465,7 @@ function renderLayout(){
     "<div class=\"sec\"><div class=\"card\">" + toggle("alwaysOnTop", "Keep on top", "Stays above other windows") +
       "<label class=\"tg\"><span>Mini mode<small>Small, in the corner, on top</small></span><input type=\"checkbox\" id=\"mm\"" + (c.mini ? " checked" : "") + "><span class=\"k\"></span></label></div></div>";
   Array.prototype.forEach.call(body.querySelectorAll("[data-size]"), function(b){ b.onclick = function(){ set({ size: b.dataset.size }); }; });
+  Array.prototype.forEach.call(body.querySelectorAll("[data-split]"), function(b){ b.onclick = function(){ call("split", +b.dataset.split); }; });
   Array.prototype.forEach.call(body.querySelectorAll("[data-pos]"), function(b){ b.onclick = function(){ set(fixed ? { position: b.dataset.pos } : { size: "medium", position: b.dataset.pos }); }; });
   $("cset").onclick = function(){ set({ size: "custom", position: "center", width: +$("cw").value || 860, height: +$("ch").value || 760 }); };
   $("zo").onclick = function(){ call("act", "zoomOut"); };
@@ -427,7 +499,7 @@ function drawIcon(){
 }
 function renderStyle(){
   var c = S.cfg, body = $("dbody");
-  var keys = [["Switch AI", (S.isMac ? "⌘" : "Ctrl") + " 1 / 2 / 3"], ["Show / hide app", S.hotkeyLabel], ["Chats", (S.isMac ? "⌘ ⇧" : "Ctrl Shift") + " H"], ["Size", (S.isMac ? "⌘ ⇧" : "Ctrl Shift") + " L"], ["Mini mode", (S.isMac ? "⌘ ⇧" : "Ctrl Shift") + " M"], ["New chat", (S.isMac ? "⌘ ⇧" : "Ctrl Shift") + " O"], ["Text size", (S.isMac ? "⌘" : "Ctrl") + " + / −"]];
+  var keys = [["Switch AI", (S.isMac ? "⌘" : "Ctrl") + " 1 / 2 / 3"], ["Show / hide app", S.hotkeyLabel], ["Chats", (S.isMac ? "⌘ ⇧" : "Ctrl Shift") + " H"], ["Size", (S.isMac ? "⌘ ⇧" : "Ctrl Shift") + " L"], ["Mini mode", (S.isMac ? "⌘ ⇧" : "Ctrl Shift") + " M"], ["New chat", (S.isMac ? "⌘ ⇧" : "Ctrl Shift") + " O"], ["Text size", (S.isMac ? "⌘" : "Ctrl") + " + / −"], ["Snap left / right", (S.isMac ? "⌘ ⌥" : "Ctrl Alt") + " ← / →"], ["Full screen", (S.isMac ? "⌘ ⌥" : "Ctrl Alt") + " ↑"]];
   body.innerHTML =
     "<div class=\"sec\"><div class=\"lbl\">Name</div><input class=\"field\" id=\"nm\" maxlength=\"40\" value=\"" + esc(c.name) + "\"></div>" +
     "<div class=\"sec\"><div class=\"lbl\">Icon</div><div class=\"card\" style=\"display:flex;flex-direction:column;gap:12px\"><div class=\"iconrow\"><canvas id=\"cv\" width=\"256\" height=\"256\"></canvas><div style=\"flex:1;display:flex;flex-direction:column;gap:8px;min-width:0\"><input class=\"field\" id=\"gl\" maxlength=\"2\" placeholder=\"Letters\" value=\"" + esc(ic.glyph) + "\"><div class=\"row\" style=\"gap:6px\">" +
@@ -438,7 +510,7 @@ function renderStyle(){
     "<div class=\"sec\"><div class=\"lbl\">Top bar</div><div class=\"row\">" + [["aurora","Aurora"],["midnight","Midnight"],["black","Black"]].map(function(t){ return "<button class=\"chip" + (c.theme === t[0] ? " on" : "") + "\" data-theme=\"" + t[0] + "\">" + t[1] + "</button>"; }).join("") + "</div></div>" +
     "<div class=\"sec\"><div class=\"lbl\">Easy use</div><div class=\"card\">" +
       toggle("keepSignedIn", "Stay signed in", "Log in once") + toggle("resume", "Open last chat", "Start where you left off") +
-      toggle("hotkey", "Show / hide shortcut", S.hotkeyLabel) + toggle("startup", "Start with computer") + toggle("closeToTray", "Keep running when closed") +
+      toggle("hotkey", "Show / hide shortcut", S.hotkeyLabel) + toggle("startup", "Start with computer") + toggle("closeToTray", "Keep running when closed") + toggle("autoHide", "Hide when I click away", "Great with the shortcut") +
     "</div></div>" +
     "<div class=\"sec\"><div class=\"lbl\">Shortcuts</div><div class=\"keys\">" + keys.map(function(k){ return "<span>" + k[0] + "</span><kbd>" + k[1] + "</kbd>"; }).join("") + "</div></div>" +
     "<div class=\"sec\"><div class=\"row\"><button class=\"chip\" id=\"rs\">" + (armed.reset ? "Click again to reset" : "Reset settings") + "</button><button class=\"chip\" id=\"wl\">Show welcome</button></div></div>";
@@ -498,6 +570,7 @@ window.exacct.on("nav", function(n){ $("b-back").disabled = !n.canBack; });
 window.exacct.on("loading", function(l){ document.body.classList.toggle("loading", !!l); });
 window.exacct.on("toast", toast);
 window.exacct.on("drawer", function(t){ toggleDrawer(t); });
+window.exacct.on("cols", function(c){ COLS = c; drawCols(); });
 call("state").then(function(s){ S = s; render(); if (!S.cfg.welcomed) showWelcome(); });
 </script>
 </body>

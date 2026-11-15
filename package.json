@@ -1,7 +1,7 @@
 {
   "name": "exacct-ai",
   "productName": "Exacct AI",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Your AI in its own window. Pick the size, the place, the icon and the name.",
   "main": "main.js",
   "author": "Expect",

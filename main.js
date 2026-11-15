@@ -1,6 +1,6 @@
 // Exacct AI 2 - your AI in its own window
 const { app, BrowserWindow, WebContentsView, ipcMain, screen, Tray, Menu, nativeImage,
-        globalShortcut, shell, dialog, session, clipboard } = require("electron");
+        globalShortcut, shell, dialog, session, clipboard, net, Notification } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const pkg = require("./package.json");
@@ -11,7 +11,8 @@ const AIS = {
   gemini:  { label: "Gemini",  color: "#4f8cff", url: "https://gemini.google.com/app", hosts: ["gemini.google.com"], chat: /^\/app\/\w+/ }
 };
 const AI_KEYS = Object.keys(AIS);
-const TOP = 52, DRAWER = 372;
+const TOP = 52, DRAWER = 372, COLH = 30, ASKH = 54;
+const SITE = "https://rehat2009-dev.github.io/exacct-ai/";
 const HOTKEY = "CommandOrControl+Shift+Space";
 const isMac = process.platform === "darwin";
 const FIXED = { mini: [380, 580], small: [460, 700], medium: [860, 760], large: [1200, 860], xl: [1500, 960] };
@@ -24,7 +25,8 @@ const DEFAULTS = {
   alwaysOnTop: false, opacity: 100, zoom: 100,
   accent: "#8b5cf6", theme: "aurora", icon: null,
   hotkey: true, startup: false, closeToTray: false, resume: true, keepSignedIn: true,
-  welcomed: false, mini: null, lastUrl: {}
+  welcomed: false, mini: null, lastUrl: {},
+  split: 1, ai2: null, goal: 0, goalDay: "", autoHide: false
 };
 const DEFAULT_PROMPTS = [
   { id: "p1", title: "Explain simply", text: "Explain this in simple words, like I'm 12:\n\n" },
@@ -49,8 +51,8 @@ const saveData = () => later("data", () => writeJson("data.json", data));
 // ---------- state ----------
 let win, tray;
 const views = {};
-const ui = { drawer: false, welcome: false };
-let placing = false;
+const ui = { drawer: false, welcome: false, ask: false };
+let placing = false, focused = null, update = null, dialogOpen = false;
 
 const UA = () => app.userAgentFallback.replace(/\sElectron\/\S+/, "").replace(/\sexacct-ai\/\S+/i, "");
 const send = (ch, d) => { if (win && !win.isDestroyed()) win.webContents.send(ch, d); };
@@ -63,7 +65,8 @@ function publicState() {
   return {
     cfg, isMac, hotkeyLabel: isMac ? "⌘ ⇧ Space" : "Ctrl + Shift + Space",
     ais: AI_KEYS.map(k => ({ id: k, label: AIS[k].label, color: AIS[k].color })),
-    sizeNames: SIZE_NAMES, history: data.history, stats: data.stats, prompts: data.prompts
+    sizeNames: SIZE_NAMES, history: data.history, stats: data.stats, prompts: data.prompts,
+    focused: focused || cfg.ai, cols: visibleAIs(), update
   };
 }
 
@@ -74,17 +77,41 @@ function iconImage(size) {
 }
 
 // ---------- window layout ----------
+function visibleAIs() {
+  if (cfg.split >= 3) return AI_KEYS.slice();
+  if (cfg.split === 2) {
+    let b = cfg.ai2;
+    if (!AIS[b] || b === cfg.ai) b = AI_KEYS.find(k => k !== cfg.ai);
+    return [cfg.ai, b];
+  }
+  return [cfg.ai];
+}
+
 function layout() {
   if (!win || win.isDestroyed()) return;
   const [w, h] = win.getContentSize();
   const drawerW = ui.drawer ? (w < 760 ? w : DRAWER) : 0;
+  const list = visibleAIs();
+  list.forEach(k => getView(k));
+  const head = TOP + (ui.ask ? ASKH : 0);
+  const top = head + (list.length > 1 ? COLH : 0);
+  const avail = Math.max(0, w - drawerW), n = list.length;
+  const colW = Math.floor((avail - (n - 1)) / n);
+  const cols = [];
   for (const k of AI_KEYS) {
     const v = views[k];
     if (!v) continue;
-    const show = !ui.welcome && k === cfg.ai && w - drawerW > 0;
+    const i = list.indexOf(k);
+    const show = !ui.welcome && i > -1 && avail > 0;
     v.setVisible(show);
-    if (show) v.setBounds({ x: 0, y: TOP, width: Math.max(0, w - drawerW), height: Math.max(0, h - TOP) });
+    if (show) {
+      const x = i * (colW + 1), width = i === n - 1 ? avail - x : colW;
+      v.setBounds({ x, y: top, width, height: Math.max(0, h - top) });
+      cols.push({ ai: k, x, width });
+    }
   }
+  cols.sort((a, b) => a.x - b.x);
+  send("cols", { cols, top: head, focused: focused || cfg.ai });
 }
 
 function presetBounds(size, wa) {
@@ -186,7 +213,7 @@ function record(ai, wc) {
 
 function getView(ai) {
   if (views[ai]) return views[ai];
-  const v = new WebContentsView({ webPreferences: { partition: "persist:exacct", contextIsolation: true, sandbox: true } });
+  const v = new WebContentsView({ webPreferences: { partition: "persist:exacct", contextIsolation: true, sandbox: true, backgroundThrottling: false } });
   v.setBackgroundColor("#09090b");
   v.setVisible(false);
   win.contentView.addChildView(v);
@@ -206,6 +233,7 @@ function getView(ai) {
   wc.on("did-stop-loading", () => { if (ai === cfg.ai) send("loading", false); });
   wc.on("did-finish-load", () => wc.setZoomFactor(cfg.zoom / 100));
   wc.on("before-input-event", onKeys);
+  wc.on("focus", () => { if (focused !== ai) { focused = ai; send("state", publicState()); layout(); } });
   const last = cfg.resume && cfg.lastUrl[ai];
   wc.loadURL(last && onHost(ai, last) ? last : AIS[ai].url, { userAgent: UA() });
   views[ai] = v;
@@ -214,7 +242,11 @@ function getView(ai) {
 
 function switchAI(ai) {
   if (!AIS[ai]) return;
-  cfg.ai = ai; saveCfg();
+  if (cfg.split < 3) {
+    if (cfg.split === 2 && visibleAIs()[1] === ai) cfg.ai2 = cfg.ai;
+    cfg.ai = ai;
+  }
+  focused = ai; saveCfg();
   const v = getView(ai);
   layout();
   send("state", publicState());
@@ -224,7 +256,79 @@ function switchAI(ai) {
   if (tray) buildTray();
 }
 
-function current() { return views[cfg.ai] && views[cfg.ai].webContents; }
+function current() {
+  const k = visibleAIs().includes(focused) ? focused : cfg.ai;
+  return views[k] && views[k].webContents;
+}
+
+function setSplit(n) {
+  cfg.split = clamp(n, 1, 3);
+  if (cfg.split === 2 && (!AIS[cfg.ai2] || cfg.ai2 === cfg.ai)) cfg.ai2 = AI_KEYS.find(k => k !== cfg.ai);
+  saveCfg();
+  const [w] = win.getContentSize();
+  if (w < cfg.split * 400) H.set({ size: cfg.split === 3 ? "full" : "large" });
+  layout(); send("state", publicState());
+  toast(cfg.split === 1 ? "One AI" : cfg.split + " AIs side by side");
+}
+
+function cycleSecond() {
+  const opts = AI_KEYS.filter(k => k !== cfg.ai);
+  cfg.ai2 = opts[(opts.indexOf(visibleAIs()[1]) + 1) % opts.length];
+  saveCfg(); layout(); send("state", publicState());
+}
+
+// types a message into an AI page and sends it
+const PAGE_SEND = function (t) {
+  return new Promise(function (done) {
+    const sels = ["#prompt-textarea", "div.ProseMirror[contenteditable=\"true\"]", "rich-textarea [contenteditable=\"true\"]", "div[contenteditable=\"true\"]", "textarea"];
+    const sendSels = ["button[data-testid=\"send-button\"]", "button[aria-label=\"Send message\"]", "button[aria-label=\"Send prompt\"]", "button.send-button", "button[aria-label*=\"Send\" i]"];
+    let tries = 0;
+    (function look() {
+      let el = null;
+      for (const s of sels) { el = Array.from(document.querySelectorAll(s)).find(e => e.offsetParent !== null); if (el) break; }
+      if (!el) { if (++tries > 50) return done(false); return setTimeout(look, 300); }
+      el.focus();
+      if (el.tagName === "TEXTAREA") {
+        const set = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value").set;
+        set.call(el, t); el.dispatchEvent(new Event("input", { bubbles: true }));
+      } else document.execCommand("insertText", false, t);
+      setTimeout(function () {
+        let btn = null;
+        for (const s of sendSels) { btn = Array.from(document.querySelectorAll(s)).find(b => b.offsetParent !== null && !b.disabled); if (btn) break; }
+        if (btn) { btn.click(); done("clicked"); } else done("enter");
+      }, 600);
+    })();
+  });
+};
+
+function sendTo(ai, text) {
+  const wc = getView(ai).webContents;
+  return new Promise(res => {
+    let started = false;
+    const go = () => {
+      if (started) return;
+      started = true;
+      wc.executeJavaScript("(" + PAGE_SEND.toString() + ")(" + JSON.stringify(text) + ")", true)
+        .then(r => {
+          if (r === "enter") ["keyDown", "char", "keyUp"].forEach(type => wc.sendInputEvent({ type, keyCode: type === "char" ? "\r" : "Enter" }));
+          res(r);
+        })
+        .catch(() => res(false));
+    };
+    wc.once("did-stop-loading", () => setTimeout(go, 800));
+    setTimeout(go, 20000);
+    wc.loadURL(AIS[ai].url, { userAgent: UA() }).catch(() => {});
+  });
+}
+
+async function askAll(text) {
+  text = String(text || "").trim();
+  if (!text) return;
+  if (cfg.split < 3) setSplit(3);
+  toast("Asking ChatGPT, Claude and Gemini");
+  const r = await Promise.all(AI_KEYS.map(k => sendTo(k, text)));
+  if (r.some(x => !x)) toast("Log in to all three first");
+}
 
 function insertPrompt(text) {
   clipboard.writeText(text);
@@ -254,6 +358,12 @@ function onKeys(e, input) {
   if (!mod) return;
   const k = String(input.key).toLowerCase();
   const stop = () => e.preventDefault();
+  if (input.alt) {
+    const snap = { arrowleft: "left", arrowright: "right", arrowup: "full" }[k];
+    if (snap) { stop(); H.set({ size: snap }); }
+    else if (k === "arrowdown") { stop(); toggleMini(); }
+    return;
+  }
   if (!input.shift && ["1", "2", "3"].includes(k)) { stop(); switchAI(AI_KEYS[+k - 1]); }
   else if (input.shift && k === "h") { stop(); send("drawer", "chats"); }
   else if (input.shift && k === "p") { stop(); send("drawer", "prompts"); }
@@ -299,6 +409,12 @@ const H = {
     return publicState();
   },
   switch: ai => switchAI(ai),
+  split: n => setSplit(n),
+  cycleSecond: () => cycleSecond(),
+  focusCol: ai => { if (!views[ai]) return; focused = ai; views[ai].webContents.focus(); send("state", publicState()); layout(); },
+  askAll: text => askAll(text),
+  pinHistory: url => { const e = data.history.find(h => h.url === url); if (e) { e.pinned = !e.pinned; saveData(); send("history", data.history); } },
+  openUpdate: () => shell.openExternal(SITE),
   act: a => {
     const wc = current();
     if (a === "back" && wc && wc.navigationHistory.canGoBack()) wc.navigationHistory.goBack();
@@ -318,7 +434,9 @@ const H = {
   clearHistory: () => { data.history = []; saveData(); send("history", data.history); },
   removeHistory: url => { data.history = data.history.filter(h => h.url !== url); saveData(); send("history", data.history); },
   pickIcon: async () => {
+    dialogOpen = true;
     const r = await dialog.showOpenDialog(win, { title: "Choose an icon", properties: ["openFile"], filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg", "ico", "webp"] }] });
+    dialogOpen = false;
     if (r.canceled || !r.filePaths[0]) return null;
     const img = nativeImage.createFromPath(r.filePaths[0]);
     return img.isEmpty() ? null : img.resize({ width: 256, height: 256, quality: "best" }).toDataURL();
@@ -336,6 +454,19 @@ const H = {
   }
 };
 ipcMain.handle("x", (e, ch, ...a) => { if (!win || e.sender !== win.webContents || !H[ch]) return null; return H[ch](...a); });
+
+// ---------- updates ----------
+function newer(a, b) {
+  const x = String(a).split(".").map(Number), y = String(b).split(".").map(Number);
+  for (let i = 0; i < 3; i++) { if ((x[i] || 0) > (y[i] || 0)) return true; if ((x[i] || 0) < (y[i] || 0)) return false; }
+  return false;
+}
+function checkUpdate() {
+  net.fetch("https://raw.githubusercontent.com/rehat2009-dev/exacct-ai/main/package.json", { cache: "no-store" })
+    .then(r => r.json())
+    .then(p => { if (p && newer(p.version, pkg.version)) { update = p.version; send("state", publicState()); } })
+    .catch(() => {});
+}
 
 // ---------- tray ----------
 function buildTray() {
@@ -377,6 +508,10 @@ function createWindow() {
   };
   win.on("moved", remember);
   win.on("resized", remember);
+  win.on("blur", () => {
+    if (!cfg.autoHide || dialogOpen) return;
+    setTimeout(() => { if (win && !win.isDestroyed() && !BrowserWindow.getFocusedWindow()) win.hide(); }, 250);
+  });
   win.on("close", e => { if (!app.isQuitting && cfg.closeToTray) { e.preventDefault(); win.hide(); } });
   win.once("ready-to-show", () => { placeWindow(); win.show(); });
   win.webContents.on("did-finish-load", () => applySettings({ place: false }));
@@ -396,12 +531,23 @@ else {
     tray.on("click", toggleWindow);
     buildTray();
     createWindow();
+    setTimeout(checkUpdate, 6000);
     // time used: counts 15 s at a time while the window is in front
     setInterval(() => {
       if (!win || win.isDestroyed() || !win.isVisible() || !win.isFocused()) return;
       const d = dayKey();
       data.stats[d] = data.stats[d] || {};
-      data.stats[d][cfg.ai] = (data.stats[d][cfg.ai] || 0) + 15;
+      const who = focused || cfg.ai;
+      data.stats[d][who] = (data.stats[d][who] || 0) + 15;
+      if (cfg.goal > 0 && cfg.goalDay !== d) {
+        const total = Object.values(data.stats[d]).reduce((a, b) => a + b, 0);
+        if (total >= cfg.goal * 60) {
+          cfg.goalDay = d; saveCfg();
+          const msg = "You used AI for " + (cfg.goal >= 60 ? cfg.goal / 60 + " h" : cfg.goal + " min") + " today";
+          toast(msg);
+          if (Notification.isSupported()) new Notification({ title: cfg.name, body: msg, icon: iconImage(128) }).show();
+        }
+      }
       const keys = Object.keys(data.stats).sort();
       while (keys.length > 60) delete data.stats[keys.shift()];
       saveData();
