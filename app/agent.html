@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Expecct Agent</title>
+<title>Expecct Work</title>
 <link rel="icon" href="icon-192.png">
 <style>
 :root{
@@ -38,6 +38,13 @@ svg{width:15px;height:15px;flex:none}
 .ti .live{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 1.2s ease-in-out infinite}
 @keyframes pulse{50%{opacity:.3}}
 .side .foot{border-top:1px solid var(--line);padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.usage{display:flex;flex-direction:column;gap:6px;padding:2px 9px 6px}
+.usage .ul{display:flex;align-items:center;justify-content:space-between;font-size:11.5px;color:var(--fg3);font-weight:600}
+.usage .ul b{color:var(--fg2);font-weight:600}
+.usage .ub{height:5px;border-radius:9px;background:var(--line2);overflow:hidden}
+.usage .ub i{display:block;height:100%;width:0;border-radius:9px;background:var(--fg2);transition:width .6s ease}
+.usage.high .ub i{background:var(--warn)}.usage.full .ub i{background:var(--del)}
+.umini{font-size:11.5px;color:var(--fg3);font-weight:600;padding:0 6px}
 .proj{display:flex;align-items:center;gap:8px;width:100%;padding:7px 9px;border-radius:8px;text-align:left;transition:background .15s}
 .proj:hover{background:var(--hover)}
 .proj .pi{width:24px;height:24px;border-radius:6px;background:var(--panel2);border:1px solid var(--line2);display:grid;place-items:center;color:var(--fg2)}
@@ -159,6 +166,10 @@ svg{width:15px;height:15px;flex:none}
     <div class="sl">Tasks</div>
     <div class="tasks" id="tasks"></div>
     <div class="foot">
+      <div class="usage" id="usage" hidden title="Work uses your usage. Chat with your own accounts uses none.">
+        <div class="ul"><span>Usage this month</span><b id="usageP">–</b></div>
+        <div class="ub"><i id="usageBar"></i></div>
+      </div>
       <button class="proj" id="folder" title="Choose the folder the agent works in"><span class="pi"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M1.8 4.2a1 1 0 0 1 1-1h3.4l1.4 1.6h5.6a1 1 0 0 1 1 1v6.9a1 1 0 0 1-1 1H2.8a1 1 0 0 1-1-1z"/></svg></span><span class="pt"><b id="folderN">Choose project</b><small id="folderP">No folder yet</small></span></button>
     </div>
   </aside>
@@ -168,6 +179,7 @@ svg{width:15px;height:15px;flex:none}
     <div class="head">
       <button class="ib menu-btn" id="menu" title="Tasks"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2.5 4h11M2.5 8h11M2.5 12h11"/></svg></button>
       <div class="ttl" id="ttl">New task</div>
+      <span class="umini" id="usageMini" hidden></span>
       <button class="ib" id="openFolder" title="Open the project folder"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2.5h4.5V7M13.5 2.5 7 9M11.5 9.5v3a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3"/></svg></button>
     </div>
 
@@ -181,7 +193,7 @@ svg{width:15px;height:15px;flex:none}
 
     <div class="comp">
       <div class="cbox">
-        <textarea id="q" placeholder="Ask the agent to build, fix or explain something" rows="2"></textarea>
+        <textarea id="q" placeholder="What should Expecct build, fix or explain?" rows="2"></textarea>
         <div class="cr">
           <div class="rel"><button class="chip" id="modelBtn"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="2.4"/><path d="M8 1.8v2M8 12.2v2M1.8 8h2M12.2 8h2M3.6 3.6l1.4 1.4M11 11l1.4 1.4M3.6 12.4 5 11M11 5l1.4-1.4"/></svg><span id="modelT">Claude</span></button><div class="pop" id="modelPop" hidden></div></div>
           <div class="rel"><button class="chip" id="runBtn"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="1.8" y="2.5" width="12.4" height="11" rx="2"/><path d="m4.5 6.5 2 1.8-2 1.8M8.5 10.5h3"/></svg><span id="runT">Ask before commands</span></button><div class="pop" id="runPop" hidden></div></div>
@@ -189,14 +201,14 @@ svg{width:15px;height:15px;flex:none}
           <button class="send" id="go" aria-label="Send"></button>
         </div>
       </div>
-      <div class="note">Files change only inside your project folder · Undo is always there</div>
+      <div class="note">Work uses your usage · Files change only inside your project folder · Undo is always there</div>
     </div>
   </main>
 </div>
 
 <div class="sheet" id="loginSheet" hidden><div>
   <h2>Log in once</h2>
-  <p>The agent uses the same login as Chat. Your browser opens, you log in, and you come right back.</p>
+  <p>Work needs a free Expecct login. Your browser opens, you log in, and you come right back.</p>
   <button class="bt" id="loginBrowser">Log in with browser</button>
   <button class="bt gh" id="loginHere">Log in here instead</button>
 </div></div>
@@ -212,7 +224,7 @@ function save(k,v){ try{ localStorage.setItem("expecct.agent."+k,JSON.stringify(
 var tt; function toast(t){ var e=$("toast"); e.textContent=t; e.classList.add("show"); clearTimeout(tt); tt=setTimeout(function(){ e.classList.remove("show"); },2400); }
 var D = window.expecctDesktop;
 if (!D || !D.agent) {
-  document.body.innerHTML = "<div class=\"noapp\"><div><h2 style=\"color:#fff;font-weight:600\">The agent lives in the Expecct app</h2><p>It needs your computer to make files and run commands.<br><br><a href=\"../#download\">Download Expecct</a> &nbsp;·&nbsp; <a href=\"./\">Use the chat here</a></p></div></div>";
+  document.body.innerHTML = "<div class=\"noapp\"><div><h2 style=\"color:#fff;font-weight:600\">Work lives in the Expecct app</h2><p>It needs your computer to make files and run commands.<br><br><a href=\"../#download\">Download Expecct</a> &nbsp;·&nbsp; <a href=\"./\">Use the chat here</a></p></div></div>";
   throw new Error("not in app");
 }
 var A = D.agent, isMac = /Mac/.test(navigator.platform);
@@ -422,7 +434,7 @@ $("q").addEventListener("keydown",function(e){ if (e.key==="Enter" && !e.shiftKe
 $("go").onclick=go;
 
 function system(){
-  return "You are Expecct Agent, a coding agent like Codex running inside the Expecct desktop app on the user's own computer.\n" +
+  return "You are Expecct Work, a coding agent like Codex running inside the Expecct desktop app on the user's own computer.\n" +
     "Computer: " + info.platform + ". Home folder: " + info.home + ". Project folder: " + (info.workspace || "(none chosen yet)") + ".\n" +
     "Tools: list_dir, read_file, search_files (read anywhere), write_file and edit_file (only inside the project folder), run_command (shell in the project folder; the user may need to approve it), open_path.\n" +
     "How to work: explore first (list_dir, read_file), then make the change, then check it by running something when that makes sense. Prefer small, correct edits. Never delete the user's files unless asked. If a command fails, read the error and fix it.\n" +
@@ -499,20 +511,36 @@ async function run(t){
   var files=Object.keys(changed).map(function(k){ return changed[k]; });
   if (files.length) add({ t:"changes", files:files });
   if (job.stopped) add({ t:"err", text:"Stopped." });
-  running=null; task.at=Date.now(); saveTasks(); drawTasks(); drawGo();
+  running=null; task.at=Date.now(); saveTasks(); drawTasks(); drawGo(); drawUsage();
   if (cur===task && nearEnd()) scrollEnd();
 }
+
+/* ---------- usage (Work counts against your monthly usage) ---------- */
+async function drawUsage(){
+  if (!window.puter || !puter.auth || !puter.auth.isSignedIn() || !puter.auth.getMonthlyUsage) return;
+  try {
+    var u = await puter.auth.getMonthlyUsage(), a = u && u.allowanceInfo;
+    if (!a || !a.monthUsageAllowance) return;
+    var pct = Math.max(0, Math.min(100, Math.round((a.monthUsageAllowance - a.remaining) / a.monthUsageAllowance * 100)));
+    $("usage").hidden = false; $("usageP").textContent = pct + "% used";
+    $("usageBar").style.width = pct + "%";
+    $("usage").classList.toggle("high", pct >= 75 && pct < 100); $("usage").classList.toggle("full", pct >= 100);
+    $("usageMini").textContent = pct + "% usage"; $("usageMini").hidden = innerWidth > 720;
+  } catch(e){}
+}
+addEventListener("resize", function(){ if (!$("usage").hidden) $("usageMini").hidden = innerWidth > 720; });
 
 /* ---------- login (same as Chat) ---------- */
 $("loginBrowser").onclick=function(){ D.login(); toast("Finish logging in in your browser"); };
 $("loginHere").onclick=function(){ puter.auth.signIn({ attempt_temp_user_creation:true }).then(loggedIn).catch(function(){}); };
 $("loginSheet").onclick=function(e){ if (e.target.id==="loginSheet") $("loginSheet").hidden=true; };
-function loggedIn(){ $("loginSheet").hidden=true; if (pending){ $("q").value=pending; pending=null; go(); } }
-D.onToken(function(tok){ try { puter.setAuthToken(tok); toast("You're logged in"); ready=null; resolve(); loggedIn(); } catch(e){} });
+function loggedIn(){ $("loginSheet").hidden=true; drawUsage(); if (pending){ $("q").value=pending; pending=null; go(); } }
+D.onToken(function(tok){ try { puter.setAuthToken(tok); toast("You're logged in"); ready=null; resolve(); drawUsage(); loggedIn(); } catch(e){} });
 
 /* ---------- start ---------- */
 drawModel(); drawRun(); drawTasks(); drawGo();
 if (window.puter) resolve();   // the list of models works without logging in
+drawUsage();
 A.info().then(function(i){ info=i||info; autoRun=!!info.autoRun; drawFolder(); drawRun(); });
 openTask(tasks[0] && Date.now()-tasks[0].at<6*3600*1000 ? tasks[0] : null);
 </script>
