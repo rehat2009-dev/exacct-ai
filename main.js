@@ -14,8 +14,8 @@ const AIS = {
 };
 const AI_KEYS = Object.keys(AIS);
 const isMac = process.platform === "darwin";
-const TOP = 40, DRAWER = 340, COLH = 30, ASKH = 54, GAP = 6, NOTICEH = 52;
-const railW = () => 52;
+const TOP = 44, DRAWER = 340, COLH = 30, ASKH = 54, GAP = 0, NOTICEH = 52;
+const railW = w => (w < 520 ? 52 : 68);
 const SITE = "https://rehat2009-dev.github.io/exacct-ai/";
 const REL = process.env.EXPECCT_REL || "https://github.com/rehat2009-dev/exacct-ai/releases/download/latest/";
 const BRAND = "Expecct";
@@ -349,8 +349,7 @@ function contextMenu(wc, p) {
 function getView(ai) {
   if (views[ai]) return views[ai];
   const v = new WebContentsView({ webPreferences: { partition: "persist:exacct", contextIsolation: true, sandbox: true, backgroundThrottling: false } });
-  v.setBackgroundColor("#212121");
-  if (typeof v.setBorderRadius === "function") v.setBorderRadius(12);
+  v.setBackgroundColor("#09090b");
   v.setVisible(false);
   win.contentView.addChildView(v);
   const wc = v.webContents;
