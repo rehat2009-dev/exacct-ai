@@ -209,6 +209,51 @@ svg{width:18px;height:18px;flex:none}
 .ihow .tab{display:flex;gap:6px;flex-wrap:wrap}
 .ihow .tab button{padding:7px 12px;border-radius:999px;border:1px solid var(--line);font-weight:700;font-size:12.5px;color:var(--muted)}
 .ihow .tab button.on{background:#fff;color:#0a0a0d;border-color:#fff}
+/* ===== chat ===== */
+.chat{display:none;flex-direction:column;gap:22px;padding-top:6px}
+.chatting .chat{display:flex}
+.chatting .hello,.chatting .home{display:none!important}
+.chatting .chat{order:1}
+.chatting .composer{order:2;position:sticky;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);z-index:5;background:color-mix(in srgb,#14141b 92%,transparent)}
+.chatting .route{order:3;margin-top:-14px}
+.chatting .main::after{content:"";position:fixed;left:0;right:0;bottom:0;height:calc(env(safe-area-inset-bottom,0px) + 30px);background:linear-gradient(transparent,var(--bg) 60%);z-index:4;pointer-events:none}
+.chatting .wrap{min-height:100dvh}
+.chatting .chat{flex:1}
+#newBtn{display:none}
+.chatting #newBtn{display:flex}
+.turn{display:flex;flex-direction:column;gap:14px;animation:rise .45s cubic-bezier(.2,.8,.2,1) both}
+.you{align-self:flex-end;max-width:85%;background:var(--card2);border:1px solid var(--line);padding:11px 15px;border-radius:20px 20px 6px 20px;white-space:pre-wrap;word-wrap:break-word;font-size:15px}
+.answers{display:grid;gap:12px}
+.answers.multi{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.ans{display:flex;flex-direction:column;gap:8px;min-width:0}
+.answers.multi .ans{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px}
+.ah{display:flex;align-items:center;gap:9px;font-weight:800;font-size:13.5px}
+.ah .ic{width:26px;height:26px;border-radius:8px;font-size:11px}
+.ah .ic img{padding:4px}
+.ah .note{font-weight:600;color:var(--muted);font-size:12px}
+.ab{font-size:15px;line-height:1.62;word-wrap:break-word;overflow-wrap:anywhere}
+.ab>*:first-child{margin-top:0}.ab>*:last-child{margin-bottom:0}
+.ab p{margin:0 0 10px}
+.ab h3,.ab h4{margin:14px 0 6px;font-size:16px}
+.ab ul,.ab ol{margin:0 0 10px;padding-left:22px}
+.ab li{margin:3px 0}
+.ab code{background:rgba(255,255,255,.08);padding:1px 6px;border-radius:6px;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.ab pre{background:#0c0c11;border:1px solid var(--line);border-radius:12px;padding:12px 14px;overflow-x:auto;margin:0 0 10px}
+.ab pre code{background:none;padding:0;white-space:pre}
+.ab a{color:color-mix(in srgb,var(--accent) 60%,#fff)}
+.ab.err{color:#fca5a5;font-size:14px}
+.typing{display:inline-flex;gap:4px;padding:6px 0}
+.typing i{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:blink 1.2s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes blink{0%,80%,100%{opacity:.25;transform:scale(.8)}40%{opacity:1;transform:none}}
+.ab.live>:last-child::after{content:"";display:inline-block;width:8px;height:15px;margin-left:2px;vertical-align:-2px;border-radius:2px;background:var(--fg);animation:caret .9s steps(1) infinite}
+@keyframes caret{50%{opacity:0}}
+.af{display:flex;gap:6px;flex-wrap:wrap;opacity:0;transition:opacity .25s}
+.ans.done .af{opacity:1}
+.af button{display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:9px;font-size:12px;font-weight:700;color:var(--muted);transition:all .2s}
+.af button:hover{color:var(--fg);background:rgba(255,255,255,.06)}
+.af svg{width:14px;height:14px}
+.send.stop{background:#fff;color:#0a0a0d}
 @media(max-width:759px){
   .rail{display:none}
   .bar .logo{display:block}
@@ -235,11 +280,14 @@ svg{width:18px;height:18px;flex:none}
     <div class="bar anim" style="--i:0">
       <img class="logo" src="icon-192.png" alt="">
       <span class="nm" id="name">Expecct</span>
+      <button class="pill" id="newBtn"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v10M3 8h10"/></svg>New chat</button>
       <button class="pill" id="installBtn"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M3 13.5h10"/></svg><span id="installT">Install</span></button>
       <button class="round" id="styleBtn" aria-label="Style"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5l1.6 3.9 4 .3-3.1 2.6 1 4L8 10.1 4.5 12.3l1-4L2.4 5.7l4-.3z"/></svg></button>
     </div>
 
     <h1 class="hello" id="hello">Hi there</h1>
+
+    <div class="chat" id="chat" aria-live="polite"></div>
 
     <div class="composer anim" style="--i:2">
       <textarea id="q" placeholder="Ask anything…" rows="2" autofocus></textarea>
@@ -250,23 +298,23 @@ svg{width:18px;height:18px;flex:none}
     </div>
     <div class="route anim" style="--i:3" id="route"></div>
 
-    <div class="signin anim" style="--i:4" id="signin" hidden>
+    <div class="home signin anim" style="--i:4" id="signin" hidden>
       <div class="h"><b>Sign in once</b><button id="signinHide">Done</button></div>
       <p>Opens in your browser, so Google, Apple and email all work. You stay signed in.</p>
       <div class="sgrid" id="sgrid"></div>
     </div>
 
-    <div class="lbl anim" style="--i:4">Your AIs</div>
-    <div class="cards anim" style="--i:5" id="cards"></div>
+    <div class="home lbl anim" style="--i:4">Your AIs</div>
+    <div class="home cards anim" style="--i:5" id="cards"></div>
 
-    <div class="lbl desk anim" style="--i:6">Window size</div>
-    <div class="sizes desk anim" style="--i:7" id="sizes"></div>
+    <div class="home lbl desk anim" style="--i:6">Window size</div>
+    <div class="home sizes desk anim" style="--i:7" id="sizes"></div>
 
-    <div class="lbl anim" style="--i:8">Prompts</div>
-    <div class="chips anim" style="--i:9" id="prompts"></div>
+    <div class="home lbl anim" style="--i:8">Prompts</div>
+    <div class="home chips anim" style="--i:9" id="prompts"></div>
 
-    <div class="lbl anim" style="--i:10">Recent</div>
-    <div class="list anim" style="--i:11" id="recent"></div>
+    <div class="home lbl anim" style="--i:10">Recent</div>
+    <div class="home list anim" style="--i:11" id="recent"></div>
   </div></div>
 </div>
 
@@ -300,6 +348,7 @@ svg{width:18px;height:18px;flex:none}
 
 <div class="toast" id="toast"></div>
 
+<script src="https://js.puter.com/v2/"></script>
 <script>
 var AIS = [
   { id:"chatgpt", label:"ChatGPT", short:"Gp", color:"#10a37f", icon:"chatgpt.com", open:"https://chatgpt.com/", ask:function(t){ return "https://chatgpt.com/?q=" + encodeURIComponent(t); } },
@@ -432,18 +481,174 @@ function choose(id){ // you picked this AI yourself: use it, even if it was paus
   if (isOut(id)) delete limits[id], save("limits",limits);
   cfg.pick=id; save("cfg",cfg); drawAll();
 }
+/* ===== chat inside Expecct (Puter) ===== */
+var MODELS = {
+  chatgpt:["openai/gpt-6-astra","gpt-6-astra","gpt-5.4-nano"],
+  claude: ["anthropic/claude-sonnet-5-5","claude-sonnet-5-5","anthropic/claude-haiku-5-5","claude-haiku-5-5"],
+  gemini: ["google/gemini-3.8-flash","gemini-3.8-flash","google/gemini-4-argon","gemini-4-argon"]
+};
+var PICK_RE = { chatgpt:/gpt/i, claude:/claude/i, gemini:/gemini/i };
+var BAD_RE = /image|audio|tts|realtime|transcri|embed|search|banana|vision-preview|omni/i;
+var modelFor = {}, modelsReady = null;
+function tail(id){ return String(id||"").split("/").pop().toLowerCase(); }
+function resolveModels(){
+  if (modelsReady) return modelsReady;
+  modelsReady = Promise.resolve().then(function(){ return puter.ai.listModels(); }).then(function(list){
+    list = list || [];
+    AIS.forEach(function(a){
+      var pref = MODELS[a.id], hit = null;
+      for (var i=0;i<pref.length && !hit;i++) hit = list.filter(function(m){ return tail(m.id)===tail(pref[i]) || (m.aliases||[]).some(function(x){ return tail(x)===tail(pref[i]); }); })[0];
+      if (!hit){
+        var c = list.filter(function(m){ return PICK_RE[a.id].test(m.id) && !BAD_RE.test(m.id); });
+        hit = c.filter(function(m){ return /astra|mini|sonnet|flash/i.test(m.id); })[0] || c[0];
+      }
+      modelFor[a.id] = hit ? hit.id : pref[0];
+    });
+  }).catch(function(){ AIS.forEach(function(a){ modelFor[a.id] = MODELS[a.id][0]; }); });
+  return modelsReady;
+}
+var thread = load("thread",[]), busy = [];
+function saveThread(){ save("thread",thread.slice(-30)); }
+function setChatting(on){ document.body.classList.toggle("chatting",!!on); }
+function md(src){
+  var parts = String(src).split("```"), out = "";
+  parts.forEach(function(p,i){
+    if (i%2){ var nl=p.indexOf("\n"); var code = nl>=0 && /^[\w+#.-]*$/.test(p.slice(0,nl)) ? p.slice(nl+1) : p; out += "<pre><code>"+esc(code.replace(/\n$/,""))+"</code></pre>"; return; }
+    var lines = p.split("\n"), list = null, para = [];
+    function inl(t){ return esc(t).replace(/`([^`]+)`/g,"<code>$1</code>").replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>").replace(/(^|[^*])\*([^*\n]+)\*/g,"$1<i>$2</i>").replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,"<a href=\"$2\" target=\"_blank\" rel=\"noopener\">$1</a>"); }
+    function flush(){ if (para.length){ out += "<p>"+para.map(inl).join("<br>")+"</p>"; para=[]; } if (list){ out += "</"+list+">"; list=null; } }
+    lines.forEach(function(l){
+      var m;
+      if (!l.trim()){ flush(); return; }
+      if ((m=l.match(/^#{1,6}\s+(.*)/))){ flush(); out += "<h3>"+inl(m[1])+"</h3>"; return; }
+      if ((m=l.match(/^\s*[-*•]\s+(.*)/)) || (m=l.match(/^\s*\d+[.)]\s+(.*)/))){
+        var kind = /^\s*\d/.test(l) ? "ol" : "ul";
+        if (para.length){ out += "<p>"+para.map(inl).join("<br>")+"</p>"; para=[]; }
+        if (list!==kind){ if (list) out += "</"+list+">"; out += "<"+kind+">"; list=kind; }
+        out += "<li>"+inl(m[1])+"</li>"; return;
+      }
+      if (list){ out += "</"+list+">"; list=null; }
+      para.push(l);
+    });
+    flush();
+  });
+  return out;
+}
+var I_COPY = "<svg viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"5\" y=\"5\" width=\"8.5\" height=\"8.5\" rx=\"2\"/><path d=\"M10.5 5V3.5a1.5 1.5 0 0 0-1.5-1.5H3.5A1.5 1.5 0 0 0 2 3.5V9a1.5 1.5 0 0 0 1.5 1.5H5\"/></svg>";
+var I_OUT = "<svg viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 2.5h4.5V7M13.5 2.5 7 9M11.5 9.5v3a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3\"/></svg>";
+function nearBottom(){ return innerHeight + scrollY >= document.documentElement.scrollHeight - 160; }
+function toBottom(){ window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" }); }
+function turnEl(turn){
+  var el=document.createElement("div"); el.className="turn";
+  el.innerHTML="<div class=\"you\"></div><div class=\"answers\"></div>";
+  el.querySelector(".you").textContent=turn.q;
+  $("chat").appendChild(el); return el;
+}
+function ansEl(box,a,note){
+  var el=document.createElement("div"); el.className="ans";
+  el.innerHTML="<div class=\"ah\">"+icHtml(a)+"<span>"+a.label+"</span>"+(note?"<span class=\"note\">"+esc(note)+"</span>":"")+"</div><div class=\"ab\"><span class=\"typing\"><i></i><i></i><i></i></span></div><div class=\"af\"></div>";
+  box.appendChild(el); return el;
+}
+function finishAns(el,a,turn,text){
+  el.classList.add("done");
+  el.querySelector(".af").innerHTML="<button data-act=\"copy\">"+I_COPY+"Copy</button><button data-act=\"open\">"+I_OUT+"Open in "+a.label+"</button>";
+  el.querySelector("[data-act=copy]").onclick=function(){ copy(text||""); toast("Copied"); };
+  el.querySelector("[data-act=open]").onclick=function(){ openAI(a, a.ask ? a.ask(turn.q) : a.open); if (!a.ask){ copy(turn.q); toast("Question copied – paste it in "+a.label); } };
+}
+function buildMsgs(aid,upto){
+  var msgs=[{ role:"system", content:"You are "+aiOf(aid).label+", answering inside the Expecct app. Answer in the same language the user writes in. Use short paragraphs and markdown." }];
+  thread.slice(-10).forEach(function(t){
+    if (t===upto) return;
+    var ans = t.a[aid] || t.a[Object.keys(t.a)[0]];
+    msgs.push({ role:"user", content:t.q }); if (ans) msgs.push({ role:"assistant", content:ans });
+  });
+  msgs.push({ role:"user", content:upto.q });
+  return msgs;
+}
+function friendly(e){
+  var m = (e && (e.message || (e.error && e.error.message) || e.toString())) || "";
+  if (/insufficient|funds|credit|quota|limit|usage/i.test(m)) return "Free usage is used up for now.";
+  if (/network/i.test(m)) return "No connection.";
+  return m ? m.slice(0,160) : "Something went wrong.";
+}
+function runAI(turn,a,box,tried,canSwitch,note){
+  tried=tried||[]; tried.push(a.id);
+  var el=ansEl(box,a,note), body=el.querySelector(".ab"), text="", job={ stop:false };
+  busy.push(job); drawSend();
+  var stick=true, raf=0;
+  function paint(){ raf=0; body.innerHTML=md(text); if (stick) window.scrollTo(0,document.documentElement.scrollHeight); }
+  function end(){ busy.splice(busy.indexOf(job),1); drawSend(); }
+  return resolveModels().then(function(){
+    var opts={ model:modelFor[a.id], stream:true };
+    return puter.ai.chat(buildMsgs(a.id,turn), false, opts).catch(function(e){
+      if (/model/i.test(friendly(e)) && a.id==="chatgpt") return puter.ai.chat(buildMsgs(a.id,turn), false, { stream:true });
+      throw e;
+    });
+  }).then(async function(res){
+    body.classList.add("live");
+    if (res && typeof res[Symbol.asyncIterator]==="function"){
+      for await (var part of res){
+        if (job.stop) break;
+        if (part && part.type==="error") throw part;
+        var t = part && (typeof part.text==="string" ? part.text : (part.type==="text" && part.content) || "");
+        if (t){ stick = nearBottom(); text+=t; if (!raf) raf=requestAnimationFrame(paint); }
+      }
+    } else {
+      text = (res && res.message && (typeof res.message.content==="string" ? res.message.content : (res.message.content||[]).map(function(c){ return c.text||""; }).join(""))) || String(res||"");
+    }
+    if (!text.trim() && !job.stop) throw { message:"Empty answer" };
+    if (raf) cancelAnimationFrame(raf); paint(); body.classList.remove("live");
+    turn.a[a.id]=text; saveThread(); finishAns(el,a,turn,text); end();
+  }).catch(function(e){
+    body.classList.remove("live"); end();
+    var n = canSwitch && nextUntried(a.id,tried);
+    if (n && !job.stop){ el.remove(); return runAI(turn,n,box,tried,true,a.label+" didn't answer → "+n.label); }
+    body.className="ab err"; body.textContent=friendly(e)+" Open it in "+a.label+" instead:";
+    finishAns(el,a,turn,"");
+  });
+}
+function nextUntried(id,tried){
+  var i=AIS.findIndex(function(a){ return a.id===id; });
+  for (var k=1;k<AIS.length;k++){ var a=AIS[(i+k)%AIS.length]; if (tried.indexOf(a.id)<0 && !isOut(a.id)) return a; }
+  return null;
+}
+function drawSend(){
+  var b=$("send"), on=busy.length>0;
+  b.classList.toggle("stop",on); b.setAttribute("aria-label",on?"Stop":"Send");
+  b.innerHTML = on ? "<svg viewBox=\"0 0 16 16\"><rect x=\"4\" y=\"4\" width=\"8\" height=\"8\" rx=\"1.5\" fill=\"currentColor\"/></svg>" : "<svg viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.1\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M8 13V3M3.5 7.5 8 3l4.5 4.5\"/></svg>";
+}
+function ask(list,t){
+  var turn={ q:t, a:{}, at:Date.now() }; thread.push(turn); saveThread();
+  setChatting(true);
+  var el=turnEl(turn), box=el.querySelector(".answers");
+  if (list.length>1) box.classList.add("multi");
+  toBottom();
+  list.forEach(function(a){ runAI(turn,a,box,[],list.length===1); });
+}
+function drawThread(){
+  $("chat").innerHTML="";
+  thread.forEach(function(turn){
+    var el=turnEl(turn), box=el.querySelector(".answers"), ids=Object.keys(turn.a);
+    if (ids.length>1) box.classList.add("multi");
+    ids.forEach(function(id){ var a=aiOf(id); if (!a) return; var x=ansEl(box,a); x.querySelector(".ab").innerHTML=md(turn.a[id]); finishAns(x,a,turn,turn.a[id]); });
+  });
+  setChatting(thread.length>0);
+}
+$("newBtn").onclick=function(){ busy.forEach(function(j){ j.stop=true; }); thread=[]; saveThread(); drawThread(); window.scrollTo({top:0,behavior:"smooth"}); $("q").focus(); };
 function send(){
+  if (busy.length){ busy.forEach(function(j){ j.stop=true; }); return; }
   if (cfg.pick!=="auto" && cfg.pick!=="all" && isOut(cfg.pick)) choose(cfg.pick);
   var t=$("q").value.trim(), list=target();
-  if (!list.length){
-    var fb=firstBack();
-    toast(cfg.pick!=="auto" && cfg.pick!=="all" && isOut(cfg.pick) ? aiOf(cfg.pick).label+" is paused – pick another" : fb ? "All paused – "+fb.label+" is back in "+left(fb.id) : "Nothing to send to");
-    return;
-  }
+  if (!t){ $("q").focus(); return; }
+  if (!list.length){ var fb=firstBack(); toast(fb ? "All paused – "+fb.label+" is back in "+left(fb.id) : "Nothing to send to"); return; }
   $("send").classList.remove("fly"); void $("send").offsetWidth; $("send").classList.add("fly");
-  if (list.length===1){ go(list[0],t); }
-  else { for (var i=0;i<list.length;i++){ if (!go(list[i],t,i,list.length)) break; } }
-  if (t){ $("q").value=""; autosize(); }
+  remember(t,list[0].id);
+  $("q").value=""; autosize();
+  if (!window.puter){ toast("Chat here isn't available – opening "+list[0].label); go(list[0],t); return; }
+  var start=function(){ ask(list,t); };
+  if (puter.auth && !puter.auth.isSignedIn()){
+    puter.auth.signIn({ attempt_temp_user_creation:true }).then(start).catch(function(){ $("q").value=t; autosize(); toast("Sign in once to chat here"); });
+  } else start();
 }
 $("send").onclick=send;
 function autosize(){ var q=$("q"); q.style.height="auto"; q.style.height=Math.min(220,q.scrollHeight)+"px"; }
@@ -489,10 +694,10 @@ function drawCards(){
 function drawRail(){
   $("rail").innerHTML=AIS.map(function(a){
     var out=isOut(a.id);
-    return "<button class=\"ri"+(out?" wait":"")+"\" data-ropen=\""+a.id+"\">"+icHtml(a)+"<span class=\"tip\">"+a.label+" · "+(out?"back in "+left(a.id):"ready")+"</span></button>";
+    return "<button class=\"ri"+(out?" wait":"")+"\" data-ropen=\""+a.id+"\">"+icHtml(a)+"<span class=\"tip\">Chat with "+a.label+"</span></button>";
   }).join("");
   each("[data-ropen]",function(b){ b.onclick=function(){
-    var a=aiOf(b.dataset.ropen); choose(a.id); go(a,$("q").value.trim());
+    var a=aiOf(b.dataset.ropen); choose(a.id); $("q").focus(); toast("Chatting with "+a.label);
   }; });
 }
 function drawAll(){ drawPicker(); drawRoute(); drawCards(); drawRail(); }
@@ -579,7 +784,7 @@ if (/[?&]install=1/.test(location.search)){
 }
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function(){});
 
-applyStyle(); greet(); drawSizes(); drawAll(); drawRecent(); drawSignin(); autosize();
+applyStyle(); greet(); drawSizes(); drawAll(); drawRecent(); drawSignin(); drawThread(); autosize();
 </script>
 </body>
 </html>
