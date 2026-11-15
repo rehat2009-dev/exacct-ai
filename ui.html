@@ -40,6 +40,11 @@ svg{width:18px;height:18px;flex:none}
 .pill2:hover{background:rgba(255,255,255,.08)}
 .pill2:active{transform:scale(.95)}
 .pill2.up{border:0;background:linear-gradient(135deg,var(--accent),var(--pink));color:#fff;box-shadow:0 6px 18px color-mix(in srgb,var(--accent) 40%,transparent)}
+.pill2.ok{border-color:transparent;color:var(--muted);font-weight:600}
+.pill2.ok:hover{color:var(--fg)}
+.pill2.dl{border-color:rgba(255,255,255,.12);color:var(--fg)}
+.pill2.dl svg{animation:bob 1s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(2px)}}
 .pill2 i{width:7px;height:7px;border-radius:50%;background:var(--gold)}
 .find{display:flex;align-items:center;gap:2px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:0 2px 0 10px;height:32px;margin-right:4px;animation:up .2s ease both}
 .find input{width:150px;border:0;background:none;outline:none;font-size:13px}
@@ -233,7 +238,7 @@ kbd{font:600 11px/1 system-ui,sans-serif;background:var(--card2);border:1px soli
   <div class="id"><img id="icon" alt=""><span class="name" id="name">Expecct</span><span class="crumb" id="crumb"></span></div>
   <div class="tools">
     <div class="find" id="find" hidden><input id="findIn" placeholder="Find in page" autocomplete="off"><span id="findN"></span><button class="tb" id="f-prev" title="Previous (Shift + Enter)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 10 4-4 4 4"/></svg></button><button class="tb" id="f-next" title="Next (Enter)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 6 4 4 4-4"/></svg></button><button class="tb" id="f-x" title="Close (Esc)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m4 4 8 8M12 4l-8 8"/></svg></button></div>
-    <button class="pill2 up" id="b-update" hidden title="A new version is ready"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5v8M4.5 7 8 10.5 11.5 7M3 13.5h10"/></svg><span id="b-updateT">Restart to update</span></button>
+    <button class="pill2 ok" id="b-update" title="Updates"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5v8M4.5 7 8 10.5 11.5 7M3 13.5h10"/></svg><span id="b-updateT">Restart to update</span></button>
     <button class="pill2" id="b-signin" hidden title="Sign in"><i></i><span>Sign in</span></button>
     <button class="tb hs" id="b-back" title="Back (Alt + ←)" disabled><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg></button>
     <button class="tb hs" id="b-reload" title="Reload (Ctrl + R)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 8a5 5 0 1 1-1.5-3.6M13 2.5V5h-2.5"/></svg></button>
@@ -340,8 +345,11 @@ function render(){
   $("b-signin").hidden = S.chatMode || sg[cur] !== false;
   $("b-signin").title = "Sign in to " + a.label;
   var u = S.update;
-  $("b-update").hidden = !u || (u.status !== "ready" && u.status !== "manual");
-  $("b-updateT").textContent = u && u.status === "manual" ? "New version" : "Restart to update";
+  // always shows: up to date / updating / restart to update
+  var st = u ? u.status : (checking ? "checking" : "ok");
+  $("b-update").className = "pill2 " + (st === "ready" || st === "manual" || st === "installing" ? "up" : st === "downloading" || st === "checking" ? "dl" : "ok");
+  $("b-updateT").textContent = st === "ready" ? "Restart to update" : st === "installing" ? "Updating…" : st === "manual" ? "New version " + u.version : st === "downloading" ? "Updating " + (u.pct || 0) + "%" : st === "checking" ? "Checking…" : "Up to date · v" + S.version;
+  $("b-update").title = st === "ok" ? "Click to check for updates" : st === "ready" ? "Restart Expecct to use version " + u.version : "";
   $("setN").hidden = !u || u.status !== "manual";
   $("r-split").classList.toggle("on", c.split > 1);
   $("splitN").hidden = c.split < 2; $("splitN").textContent = c.split;
@@ -363,7 +371,13 @@ $("b-min").onclick = function(){ call("act", "min"); };
 $("b-max").onclick = function(){ call("act", "max"); };
 $("b-close").onclick = function(){ call("act", "close"); };
 $("b-signin").onclick = function(){ call("signIn", S.focused || S.cfg.ai); };
-$("b-update").onclick = function(){ if (S.update && S.update.status === "ready") toast("Updating..."); call("update", S.update && S.update.status === "ready" ? "restart" : "open"); };
+var checking = false;
+$("b-update").onclick = function(){
+  var u = S.update;
+  if (!u){ checking = true; render(); call("update", "check").then(function(){ checking = false; render(); }); return; }
+  if (u.status === "ready"){ toast("Updating..."); call("update", "restart"); return; }
+  if (u.status === "manual") call("update", "open");
+};
 
 /* ---------- find in page ---------- */
 function openFind(){ $("find").hidden = false; $("findIn").focus(); $("findIn").select(); }
