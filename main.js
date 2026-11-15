@@ -62,7 +62,7 @@ const DEFAULTS = {
   accent: "#8b5cf6", theme: "aurora", icon: null,
   hotkey: true, startup: false, closeToTray: false, resume: true, keepSignedIn: true,
   welcomed: false, mini: null, lastUrl: {},
-  split: 1, ai2: null, goal: 0, goalDay: "", autoHide: false, chatMode: true, page: "chat", workspace: "", autoRun: false
+  split: 1, ai2: null, goal: 0, goalDay: "", autoHide: false, chatMode: false, page: "agent", workspace: "", autoRun: false
 };
 const DEFAULT_PROMPTS = [
   { id: "p1", title: "Explain simply", text: "Explain this in simple words, like I'm 12:\n\n" },
@@ -442,7 +442,8 @@ async function refreshPages() {
   }
 }
 function openChat(page) {
-  cfg.chatMode = true; cfg.page = page === "agent" ? "agent" : "chat"; saveCfg();
+  if (page !== "agent") { switchAI(cfg.ai); return; }   // Chat = the AI's own site with your account
+  cfg.chatMode = true; cfg.page = "agent"; saveCfg();
   ui.notice = false;
   layout(); send("state", publicState());
   const c = cfg.page === "agent" ? getAgent() : getChat(); if (!ui.drawer) c.webContents.focus();
@@ -1130,9 +1131,8 @@ function buildTray() {
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: "Show / hide " + cfg.name, click: toggleWindow },
     { type: "separator" },
-    { label: "Chat", type: "radio", checked: !!cfg.chatMode && cfg.page !== "agent", click: () => { showWin(); openChat("chat"); } },
-    { label: "Agent", type: "radio", checked: !!cfg.chatMode && cfg.page === "agent", click: () => { showWin(); openChat("agent"); } },
-    ...AI_KEYS.map(k => ({ label: AIS[k].label, type: "radio", checked: !cfg.chatMode && cfg.ai === k, click: () => { showWin(); switchAI(k); } })),
+    { label: "Work", type: "radio", checked: !!cfg.chatMode, click: () => { showWin(); openChat("agent"); } },
+    ...AI_KEYS.map(k => ({ label: "Chat · " + AIS[k].label, type: "radio", checked: !cfg.chatMode && cfg.ai === k, click: () => { showWin(); switchAI(k); } })),
     { type: "separator" },
     { label: "Size", submenu: sizes.map(s => ({ label: SIZE_NAMES[s], type: "radio", checked: cfg.size === s, click: () => H.set({ size: s }) })) },
     { label: "Mini mode", type: "checkbox", checked: !!cfg.mini, click: toggleMini },
@@ -1202,6 +1202,9 @@ else {
     cfg.lastUrl = cfg.lastUrl || {};
     data = { history: [], stats: {}, prompts: DEFAULT_PROMPTS, ...readJson("data.json", {}) };
     if (!AIS[cfg.ai]) cfg.ai = defaultAi;
+    // Chat = your own ChatGPT / Claude / Gemini accounts (no Expecct usage). Work = the agent (uses usage).
+    if (cfg.chatMode && cfg.page !== "agent") cfg.chatMode = false;
+    cfg.page = "agent";
     if (!cfg.name || cfg.name === "Exacct AI") cfg.name = BRAND;
     if (!["aurora", "midnight", "black"].includes(cfg.theme)) cfg.theme = "aurora";
     if (cfg.accent === "#0a84ff") cfg.accent = DEFAULTS.accent;

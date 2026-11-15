@@ -254,8 +254,8 @@ kbd{font:600 11px/1 system-ui,sans-serif;background:var(--card2);border:1px soli
 <div class="loadbar"><i></i></div>
 
 <nav class="rail" id="rail" aria-label="Expecct">
-  <button class="ri" id="r-chat" title="Chat – answers right here in Expecct"><i class="chic"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z"/></svg></i><span>Chat</span></button>
-  <button class="ri" id="r-agent" title="Agent – builds things on your computer, like Codex"><i class="chic ag"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1.8" y="2.5" width="12.4" height="11" rx="2"/><path d="m4.5 6.5 2 1.8-2 1.8M8.5 10.5h3"/></svg></i><span>Agent</span></button>
+  <button class="ri" id="r-chat" title="Chat – your own ChatGPT, Claude or Gemini account. Uses no Expecct usage."><i class="chic"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z"/></svg></i><span>Chat</span></button>
+  <button class="ri" id="r-agent" title="Work – builds things on your computer, like Codex. Uses your usage."><i class="chic ag"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1.8" y="2.5" width="12.4" height="11" rx="2"/><path d="m4.5 6.5 2 1.8-2 1.8M8.5 10.5h3"/></svg></i><span>Work</span></button>
   <div class="rsep"></div>
   <div id="aiList" style="display:flex;flex-direction:column;align-items:center;gap:4px"></div>
   <div class="rsep"></div>
@@ -318,9 +318,9 @@ function render(){
   $("icon").src = iconSrc(); $("stageIcon").src = iconSrc();
   var a = aiOf(cur);
   document.body.classList.toggle("chatmode", !!S.chatMode);
-  $("crumb").innerHTML = S.chatMode ? (S.page === "agent" ? "Agent" : "Chat") : "<i style=\"background:" + a.color + "\"></i>" + esc(a.label);
-  $("r-chat").classList.toggle("on", !!S.chatMode && S.page !== "agent");
-  $("r-agent").classList.toggle("on", !!S.chatMode && S.page === "agent");
+  $("crumb").innerHTML = S.chatMode ? "Work" : "Chat · <i style=\"background:" + a.color + "\"></i>" + esc(a.label);
+  $("r-chat").classList.toggle("on", !S.chatMode);
+  $("r-agent").classList.toggle("on", !!S.chatMode);
   $("b-mini").classList.toggle("on", !!c.mini);
   var list = $("aiList");
   if (!list.children.length) {
@@ -359,7 +359,7 @@ function render(){
   if (open) renderPanel();
 }
 
-$("r-chat").onclick = function(){ if (open) closePanel(); call("chat", "chat"); };
+$("r-chat").onclick = function(){ if (open) closePanel(); call("switch", (S && (S.focused || S.cfg.ai)) || "chatgpt"); };
 $("r-agent").onclick = function(){ if (open) closePanel(); call("chat", "agent"); };
 
 /* ---------- top bar ---------- */
