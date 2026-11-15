@@ -1,7 +1,7 @@
 {
   "name": "expecct",
   "productName": "Expecct",
-  "version": "3.0.1",
+  "version": "3.1.0",
   "description": "Expecct - ChatGPT, Claude and Gemini in their own window. Any size, any place, your style.",
   "main": "main.js",
   "author": "Expecct",

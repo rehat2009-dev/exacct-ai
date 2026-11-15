@@ -1,6 +1,6 @@
 // Expecct 3 - your AI in its own window
 const { app, BrowserWindow, WebContentsView, ipcMain, screen, Tray, Menu, nativeImage,
-        globalShortcut, shell, dialog, session, clipboard, net, Notification } = require("electron");
+        globalShortcut, shell, dialog, session, clipboard, net, Notification, nativeTheme } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
@@ -55,7 +55,7 @@ const DEFAULTS = {
   ai: defaultAi, name: BRAND,
   size: "medium", position: "center", x: null, y: null, width: 860, height: 760,
   alwaysOnTop: false, opacity: 100, zoom: 100,
-  accent: "#8b5cf6", theme: "aurora", icon: null,
+  accent: "#0a84ff", theme: "auto", icon: null,
   hotkey: true, startup: false, closeToTray: false, resume: true, keepSignedIn: true,
   welcomed: false, mini: null, lastUrl: {},
   split: 1, ai2: null, goal: 0, goalDay: "", autoHide: false
@@ -99,7 +99,7 @@ function publicState() {
     cfg, isMac, hotkeyLabel: isMac ? "⌘ ⇧ Space" : "Ctrl + Shift + Space",
     ais: AI_KEYS.map(k => ({ id: k, label: AIS[k].label, color: AIS[k].color })),
     sizeNames: SIZE_NAMES, history: data.history, stats: data.stats, prompts: data.prompts,
-    focused: focused || cfg.ai, cols: visibleAIs(), update: upd, signed, version: pkg.version
+    focused: focused || cfg.ai, cols: visibleAIs(), update: upd, signed, version: pkg.version, dark: nativeTheme.shouldUseDarkColors
   };
 }
 
@@ -202,7 +202,8 @@ function applySettings(opts) {
   if (!win) return;
   win.setTitle(cfg.name);
   win.setAlwaysOnTop(!!cfg.alwaysOnTop, "floating");
-  win.setOpacity(clamp(cfg.opacity, 40, 100) / 100);
+  if (!faded && !fadeTimer) win.setOpacity(fullOpacity());
+  applyTheme();
   if (!isMac) win.setIcon(iconImage(256));
   if (isMac && app.dock) app.dock.setIcon(iconImage(512));
   if (tray) { tray.setImage(iconImage(isMac ? 18 : 16)); tray.setToolTip(cfg.name); buildTray(); }
@@ -213,10 +214,51 @@ function applySettings(opts) {
   send("state", publicState());
 }
 
+// ---------- smooth open / close ----------
+let fadeTimer = null, faded = false, closing = false, closingDone = false;
+const fullOpacity = () => clamp(cfg.opacity, 40, 100) / 100;
+function fade(to, ms) {
+  return new Promise(res => {
+    clearInterval(fadeTimer); fadeTimer = null;
+    if (!win || win.isDestroyed() || process.platform === "linux") { res(); return; }
+    const from = win.getOpacity(), t0 = Date.now();
+    fadeTimer = setInterval(() => {
+      if (!win || win.isDestroyed()) { clearInterval(fadeTimer); fadeTimer = null; res(); return; }
+      const p = Math.min(1, (Date.now() - t0) / ms), e = 1 - Math.pow(1 - p, 3);
+      win.setOpacity(from + (to - from) * e);
+      if (p >= 1) { clearInterval(fadeTimer); fadeTimer = null; res(); }
+    }, 8);
+  });
+}
+function showWin() {
+  if (!win || win.isDestroyed()) return;
+  if (win.isMinimized()) win.restore();
+  if (!win.isVisible() || faded) {
+    win.setOpacity(0); win.show(); win.focus(); faded = false;
+    fade(fullOpacity(), 200);
+  } else { win.show(); win.focus(); }
+}
+async function hideWin(then) {
+  if (!win || win.isDestroyed() || !win.isVisible()) { if (then) then(); return; }
+  await fade(0, 170);
+  faded = true;
+  if (then) then(); else win.hide();
+}
 function toggleWindow() {
   if (!win) return;
-  if (win.isVisible() && win.isFocused()) win.hide(); else { win.show(); win.focus(); }
+  if (win.isVisible() && win.isFocused() && !faded) hideWin(); else showWin();
 }
+
+// ---------- light / dark ----------
+function applyTheme() {
+  const src = cfg.theme === "light" || cfg.theme === "dark" ? cfg.theme : "system";
+  if (nativeTheme.themeSource !== src) nativeTheme.themeSource = src;
+  const bg = nativeTheme.shouldUseDarkColors ? "#1c1c1e" : "#f5f5f7";
+  if (win && !win.isDestroyed() && !isMac) win.setBackgroundColor(bg);
+  for (const k of AI_KEYS) if (views[k]) views[k].setBackgroundColor(bg);
+  if (win && !win.isDestroyed() && lastDark !== nativeTheme.shouldUseDarkColors) { lastDark = nativeTheme.shouldUseDarkColors; send("state", publicState()); }
+}
+let lastDark = null;
 
 function toggleMini() {
   if (cfg.mini) { Object.assign(cfg, cfg.mini); cfg.mini = null; }
@@ -301,7 +343,7 @@ function contextMenu(wc, p) {
 function getView(ai) {
   if (views[ai]) return views[ai];
   const v = new WebContentsView({ webPreferences: { partition: "persist:exacct", contextIsolation: true, sandbox: true, backgroundThrottling: false } });
-  v.setBackgroundColor("#09090b");
+  v.setBackgroundColor(nativeTheme.shouldUseDarkColors ? "#1c1c1e" : "#f5f5f7");
   v.setVisible(false);
   win.contentView.addChildView(v);
   const wc = v.webContents;
@@ -586,7 +628,7 @@ const H = {
     if (a === "back" && wc && wc.navigationHistory.canGoBack()) wc.navigationHistory.goBack();
     if (a === "reload" && wc) wc.reload();
     if (a === "home" && wc) wc.loadURL(AIS[cfg.ai].url, { userAgent: UA() });
-    if (a === "min") win.minimize();
+    if (a === "min") { if (isMac) win.minimize(); else hideWin(() => win.minimize()); }
     if (a === "max") win.isMaximized() ? win.unmaximize() : win.maximize();
     if (a === "close") win.close();
     if (a === "pin") { cfg.alwaysOnTop = !cfg.alwaysOnTop; saveCfg(); applySettings(); toast(cfg.alwaysOnTop ? "Stays on top" : "Normal window"); }
@@ -699,7 +741,7 @@ function buildTray() {
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: "Show / hide " + cfg.name, click: toggleWindow },
     { type: "separator" },
-    ...AI_KEYS.map(k => ({ label: AIS[k].label, type: "radio", checked: cfg.ai === k, click: () => { win.show(); switchAI(k); } })),
+    ...AI_KEYS.map(k => ({ label: AIS[k].label, type: "radio", checked: cfg.ai === k, click: () => { showWin(); switchAI(k); } })),
     { type: "separator" },
     { label: "Size", submenu: sizes.map(s => ({ label: SIZE_NAMES[s], type: "radio", checked: cfg.size === s, click: () => H.set({ size: s }) })) },
     { label: "Mini mode", type: "checkbox", checked: !!cfg.mini, click: toggleMini },
@@ -715,8 +757,10 @@ function createWindow() {
   win = new BrowserWindow({
     width: 860, height: 760, minWidth: 360, minHeight: 420, show: false,
     frame: isMac, titleBarStyle: isMac ? "hiddenInset" : undefined,
-    trafficLightPosition: { x: 16, y: 18 },
-    backgroundColor: "#09090b", title: cfg.name,
+    trafficLightPosition: { x: 16, y: 15 },
+    ...(isMac ? { vibrancy: "sidebar", visualEffectState: "active", backgroundColor: "#00000000" }
+              : { backgroundColor: nativeTheme.shouldUseDarkColors ? "#1c1c1e" : "#f5f5f7" }),
+    title: cfg.name,
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, sandbox: true }
   });
   win.loadFile(path.join(__dirname, "ui.html"));
@@ -734,24 +778,42 @@ function createWindow() {
   };
   win.on("moved", remember);
   win.on("resized", remember);
+  win.on("focus", () => send("winfocus", true));
   win.on("blur", () => {
+    send("winfocus", false);
     if (!cfg.autoHide || dialogOpen) return;
-    setTimeout(() => { if (win && !win.isDestroyed() && !BrowserWindow.getFocusedWindow()) win.hide(); }, 250);
+    setTimeout(() => { if (win && !win.isDestroyed() && !BrowserWindow.getFocusedWindow()) hideWin(); }, 250);
   });
-  win.on("close", e => { if (!app.isQuitting && cfg.closeToTray) { e.preventDefault(); win.hide(); } });
-  win.once("ready-to-show", () => { placeWindow(); win.show(); });
+  // closing fades the window out first, then quits (or hides to the tray)
+  win.on("close", e => {
+    if (closingDone) return;
+    e.preventDefault();
+    if (closing) return;
+    closing = true;
+    hideWin(() => {
+      closing = false;
+      if (!app.isQuitting && cfg.closeToTray) { win.hide(); return; }
+      closingDone = true; app.isQuitting = true; app.quit();
+    });
+  });
+  win.on("restore", () => { if (faded) { faded = false; fade(fullOpacity(), 200); } });
+  win.once("ready-to-show", () => { placeWindow(); faded = true; win.setOpacity(0); showWin(); });
   win.webContents.on("did-finish-load", () => applySettings({ place: false }));
 }
 
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
-  app.on("second-instance", () => { if (win) { win.show(); win.focus(); } });
+  app.on("second-instance", () => showWin());
   app.whenReady().then(() => {
     cfg = { ...DEFAULTS, ...readJson("settings.json", {}) };
     cfg.lastUrl = cfg.lastUrl || {};
     data = { history: [], stats: {}, prompts: DEFAULT_PROMPTS, ...readJson("data.json", {}) };
     if (!AIS[cfg.ai]) cfg.ai = defaultAi;
     if (!cfg.name || cfg.name === "Exacct AI") cfg.name = BRAND;
+    if (!["auto", "light", "dark"].includes(cfg.theme)) cfg.theme = "auto";
+    if (cfg.accent === "#8b5cf6") cfg.accent = DEFAULTS.accent;
+    applyTheme();
+    nativeTheme.on("updated", applyTheme);
     const ses = keepCookies();
     setupDownloads(ses);
     ses.cookies.on("changed", () => later("authcheck", checkAuth, 1200));
@@ -783,14 +845,20 @@ else {
       while (keys.length > 60) delete data.stats[keys.shift()];
       saveData();
     }, 15000);
-    app.on("before-quit", () => {
+    app.on("before-quit", e => {
+      if (!closingDone && win && !win.isDestroyed() && win.isVisible() && !faded) {
+        e.preventDefault(); app.isQuitting = true;
+        if (!closing) { closing = true; hideWin(() => { closingDone = true; app.quit(); }); }
+        return;
+      }
+      closingDone = true;
       app.isQuitting = true;
       if (upd && upd.status === "ready") installUpdate(false);
       writeJson("settings.json", cfg); writeJson("data.json", data);
       ses.cookies.flushStore().catch(() => {});
     });
   });
-  app.on("activate", () => { if (win && !win.isDestroyed()) { win.show(); win.focus(); } });
-  app.on("will-quit", () => globalShortcut.unregisterAll());
+  app.on("activate", () => showWin());
+  app.on("will-quit", () => { globalShortcut.unregisterAll(); if (tray && !tray.isDestroyed()) tray.destroy(); });
   app.on("window-all-closed", () => app.quit());
 }
