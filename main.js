@@ -14,7 +14,7 @@ const AIS = {
 };
 const AI_KEYS = Object.keys(AIS);
 const isMac = process.platform === "darwin";
-const TOP = 40, DRAWER = 340, COLH = 30, ASKH = 54, GAP = 6;
+const TOP = 40, DRAWER = 340, COLH = 30, ASKH = 54, GAP = 6, NOTICEH = 52;
 const railW = () => 52;
 const SITE = "https://rehat2009-dev.github.io/exacct-ai/";
 const REL = process.env.EXPECCT_REL || "https://github.com/rehat2009-dev/exacct-ai/releases/download/latest/";
@@ -40,8 +40,6 @@ else if (app.isPackaged) {
 const CHROME_MAJOR = String(process.versions.chrome || "130").split(".")[0];
 const OS_PART = isMac ? "Macintosh; Intel Mac OS X 10_15_7" : process.platform === "win32" ? "Windows NT 10.0; Win64; x64" : "X11; Linux x86_64";
 const CHROME_UA = "Mozilla/5.0 (" + OS_PART + ") AppleWebKit/537.36 (KHTML, like Gecko) Chrome/" + CHROME_MAJOR + ".0.0.0 Safari/537.36";
-// Google blocks sign-in from apps that look like Chrome, so its sign-in page gets a Firefox look
-const GOOGLE_UA = "Mozilla/5.0 (" + (isMac ? "Macintosh; Intel Mac OS X 10.15" : process.platform === "win32" ? "Windows NT 10.0; Win64; x64" : "X11; Linux x86_64") + "; rv:140.0) Gecko/20100101 Firefox/140.0";
 const isGoogleLogin = url => { try { return new URL(url).hostname === "accounts.google.com"; } catch { return false; } };
 app.userAgentFallback = CHROME_UA;
 
@@ -128,7 +126,7 @@ function layout() {
   const left = rail + drawerW;
   const list = visibleAIs();
   list.forEach(k => getView(k));
-  const head = TOP + (ui.ask ? ASKH : 0);
+  const head = TOP + (ui.ask ? ASKH : 0) + (ui.notice ? NOTICEH : 0);
   const top = head + (list.length > 1 ? COLH : 0);
   const avail = Math.max(0, w - left), n = list.length;
   const colW = Math.floor((avail - (n - 1)) / n);
@@ -295,10 +293,17 @@ const openExt = url => { if (/^(https?|mailto):/i.test(url)) shell.openExternal(
 // shared setup for AI pages and their sign-in popups
 function setupContents(wc, ai) {
   wc.setUserAgent(UA());
-  wc.on("did-start-navigation", (e, url, inPlace, isMain) => {
-    const u = e.url || url, main = e.isMainFrame !== undefined ? e.isMainFrame : isMain;
-    if (main && !(e.isSameDocument || inPlace)) wc.setUserAgent(isGoogleLogin(u) ? GOOGLE_UA : UA());
-  });
+  // Google does not allow signing in inside apps. When it says no, offer a real browser window instead.
+  const checkGoogle = () => {
+    const url = wc.getURL();
+    if (!isGoogleLogin(url)) return;
+    if (/\/rejected/.test(url)) { googleBlocked(ai, wc); return; }
+    wc.executeJavaScript("document.body ? document.body.innerText.slice(0, 3000) : ''", true).then(t => {
+      if (/may not be secure|muligens ikke sikker|kanskje ikke sikker|möglicherweise nicht sicher|n'est peut-être pas sécurisé|puede que no sea seguro/i.test(t || "")) googleBlocked(ai, wc);
+    }).catch(() => {});
+  };
+  wc.on("did-finish-load", checkGoogle);
+  wc.on("did-navigate-in-page", checkGoogle);
   wc.setWindowOpenHandler(({ url }) => {
     let h = ""; try { h = new URL(url).hostname; } catch {}
     const login = LOGIN_HOSTS.some(d => h === d || h.endsWith("." + d));
@@ -603,12 +608,38 @@ function setupDownloads(s) {
   const OK = ["media", "notifications", "clipboard-read", "clipboard-sanitized-write", "fullscreen", "pointerLock"];
   s.setPermissionRequestHandler((_wc, perm, cb) => cb(OK.includes(perm)));
   s.setPermissionCheckHandler((_wc, perm) => OK.includes(perm));
-  s.webRequest.onBeforeSendHeaders({ urls: ["https://accounts.google.com/*"] }, (d, cb) => {
-    const h = d.requestHeaders;
-    for (const k of Object.keys(h)) if (/^user-agent$/i.test(k) || /^sec-ch-ua/i.test(k)) delete h[k];
-    h["User-Agent"] = GOOGLE_UA;
-    cb({ requestHeaders: h });
-  });
+}
+
+// ---------- Google sign-in ----------
+function googleBlocked(ai, wc) {
+  const main = views[ai] && views[ai].webContents === wc;
+  if (!main) { const w = BrowserWindow.fromWebContents(wc); if (w && w !== win) w.close(); }
+  else if (wc.navigationHistory.canGoBack()) wc.navigationHistory.goBack();
+  ui.notice = ai; layout();
+  send("notice", { ai, label: AIS[ai].label });
+  if (win) showWin();
+}
+// Opens the AI in Chrome or Edge as its own app window, where Google sign-in works.
+function findBrowser() {
+  const env = process.env, list = process.platform === "win32" ? [
+    path.join(env.LOCALAPPDATA || "", "Google/Chrome/Application/chrome.exe"),
+    path.join(env.PROGRAMFILES || "C:/Program Files", "Google/Chrome/Application/chrome.exe"),
+    path.join(env["PROGRAMFILES(X86)"] || "C:/Program Files (x86)", "Google/Chrome/Application/chrome.exe"),
+    path.join(env["PROGRAMFILES(X86)"] || "C:/Program Files (x86)", "Microsoft/Edge/Application/msedge.exe"),
+    path.join(env.PROGRAMFILES || "C:/Program Files", "Microsoft/Edge/Application/msedge.exe")
+  ] : isMac ? [
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+    "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
+  ] : ["/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser", "/usr/bin/microsoft-edge"];
+  return list.find(p => { try { return fs.existsSync(p); } catch { return false; } });
+}
+function openAppWindow(ai) {
+  const url = AIS[ai].url, exe = findBrowser();
+  if (!exe) { shell.openExternal(url); return "browser"; }
+  const b = win ? win.getBounds() : { x: 100, y: 100, width: 900, height: 760 };
+  spawn(exe, ["--app=" + url, "--window-size=" + b.width + "," + b.height, "--window-position=" + b.x + "," + b.y], { detached: true, stdio: "ignore" }).unref();
+  return path.basename(exe).replace(/\.exe$/i, "");
 }
 
 // ---------- find in page ----------
@@ -653,6 +684,8 @@ const H = {
   signIn: ai => signIn(ai),
   signOut: ai => signOut(ai),
   askOne: (ai, text) => askOne(ai, String(text || "").trim()),
+  openAppWindow: ai => { if (!AIS[ai]) return; ui.notice = false; layout(); const r = openAppWindow(ai); toast("Opening " + AIS[ai].label + " in its own window"); return r; },
+  closeNotice: () => { ui.notice = false; layout(); },
   act: a => {
     const wc = current();
     if (a === "back" && wc && wc.navigationHistory.canGoBack()) wc.navigationHistory.goBack();

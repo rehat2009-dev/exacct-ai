@@ -251,6 +251,13 @@ html,body{font-size:13.5px}
 .stage{background:#212121}
 .panel{box-shadow:none}
 .tg small,.hint{display:none}
+.notice{position:fixed;right:0;height:52px;z-index:9;display:flex;align-items:center;gap:10px;padding:0 10px 0 14px;background:var(--panel);border-bottom:1px solid var(--line);animation:up .25s ease both}
+.notice .gl{width:26px;height:26px;border-radius:8px;background:var(--gold);color:#111;display:grid;place-items:center;font-weight:900;flex:none}
+.notice p{margin:0;flex:1;min-width:0;font-size:12.5px;line-height:1.3}
+.notice p b{display:block;font-size:13px}
+.notice .go{border:0;border-radius:999px;padding:7px 14px;font-weight:700;font-size:12.5px;background:#fff;color:#0b0b0f;white-space:nowrap}
+.notice .go2{border:1px solid var(--line);border-radius:999px;padding:7px 12px;font-weight:600;font-size:12.5px;background:transparent;white-space:nowrap}
+@media (max-width:620px){.notice p span{display:none}}
 </style>
 </head>
 <body class="t-aurora">
@@ -291,6 +298,7 @@ html,body{font-size:13.5px}
 <div class="stage"><img id="stageIcon" alt=""></div>
 <form class="ask" id="ask" hidden><input id="askIn" placeholder="Ask ChatGPT, Claude and Gemini at once" autocomplete="off"><button class="go" type="submit">Ask all</button><button class="tb" type="button" id="askX" title="Close"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m4 4 8 8M12 4l-8 8"/></svg></button></form>
 <div class="cols" id="cols" hidden></div>
+<div class="notice" id="notice" hidden><i class="gl">!</i><p><b>Google doesn't allow sign-in inside apps</b><span id="noticeT"></span></p><button class="go2" id="noticeEmail" hidden>Use email</button><button class="go" id="noticeOpen">Open in browser window</button><button class="tb" id="noticeX" title="Close"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m4 4 8 8M12 4l-8 8"/></svg></button></div>
 
 <aside class="panel" id="panel" aria-label="Panel">
   <div class="phead"><h2 id="ptitle">Chats</h2><button class="tb" id="p-close" title="Close (Esc)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m4 4 8 8M12 4l-8 8"/></svg></button></div>
@@ -693,10 +701,22 @@ window.exacct.on("history", function(h){ if (!S) return; S.history = h; if (open
 window.exacct.on("nav", function(n){ $("b-back").disabled = !n.canBack; $("b-fwd").disabled = !n.canFwd; });
 window.exacct.on("loading", function(l){ document.body.classList.toggle("loading", !!l); });
 window.exacct.on("toast", toast);
+var noticeAi = null;
+function placeNotice(){ var n = $("notice"); n.style.left = COLS.left + "px"; n.style.top = "calc(var(--top) + " + (askOpen ? 54 : 0) + "px)"; }
+window.exacct.on("notice", function(d){
+  noticeAi = d.ai;
+  var g = d.ai === "gemini";
+  $("noticeT").textContent = g ? "Open Gemini in its own Chrome or Edge window and sign in with Google there." : "Use “Continue with email” on the sign-in page, or open " + d.label + " in its own browser window.";
+  $("noticeEmail").hidden = g;
+  placeNotice(); $("notice").hidden = false;
+});
+$("noticeOpen").onclick = function(){ $("notice").hidden = true; call("openAppWindow", noticeAi); };
+$("noticeEmail").onclick = function(){ $("notice").hidden = true; call("closeNotice"); call("signIn", noticeAi); };
+$("noticeX").onclick = function(){ $("notice").hidden = true; call("closeNotice"); };
 window.exacct.on("find", openFind);
 window.exacct.on("found", function(r){ $("findN").textContent = r ? (r.total ? r.active + "/" + r.total : "0") : ""; });
 window.exacct.on("drawer", function(t){ togglePanel(t); });
-window.exacct.on("cols", function(c){ COLS = c; drawCols(); });
+window.exacct.on("cols", function(c){ COLS = c; drawCols(); if (!$("notice").hidden) placeNotice(); });
 call("state").then(function(s){ S = s; render(); if (!S.cfg.welcomed) showWelcome(); });
 </script>
 </body>
