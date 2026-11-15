@@ -149,6 +149,66 @@ svg{width:15px;height:15px;flex:none}
 .noapp{height:100vh;display:grid;place-items:center;text-align:center;color:var(--fg2);padding:20px}
 .noapp a{color:var(--fg)}
 .scrim{display:none}
+/* search + task actions */
+.srch{margin:2px 10px 4px;display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:7px;border:1px solid var(--line);color:var(--fg3)}
+.srch input{flex:1;min-width:0;background:none;border:0;outline:none;font-size:12.5px;color:var(--fg)}
+.srch svg{width:13px;height:13px}
+.ti{position:relative;cursor:pointer;user-select:none}
+.ti .ta{display:none;gap:2px}
+.ti:hover .ta{display:flex}.ti:hover .tm{display:none}
+.ta i{width:22px;height:22px;border-radius:5px;display:grid;place-items:center;color:var(--fg3)}
+.ta i:hover{background:var(--line2);color:var(--fg)}
+.ta svg{width:12px;height:12px}
+/* git chip + review drawer */
+.gchip{display:flex;align-items:center;gap:6px;height:28px;padding:0 9px;border-radius:7px;color:var(--fg2);font:12px var(--mono);border:1px solid var(--line);transition:background .15s}
+.gchip:hover{background:var(--hover);color:var(--fg)}
+.gchip b{font-weight:500;color:var(--add)}
+.gchip svg{width:13px;height:13px}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(520px,100%);background:var(--side);border-left:1px solid var(--line2);z-index:35;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .22s ease;box-shadow:-20px 0 50px rgba(0,0,0,.45)}
+.drawer.open{transform:none}
+.dh{height:44px;flex:none;display:flex;align-items:center;gap:8px;padding:0 10px 0 14px;border-bottom:1px solid var(--line);font-weight:600}
+.dh .sp{flex:1}
+.dtabs{display:flex;gap:4px;padding:8px 10px;border-bottom:1px solid var(--line)}
+.dtabs button{padding:5px 10px;border-radius:6px;color:var(--fg2);font-weight:600;font-size:12.5px}
+.dtabs button.on{background:var(--panel2);color:var(--fg)}
+.dfiles{flex:none;max-height:38%;overflow:auto;border-bottom:1px solid var(--line);padding:4px}
+.df{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:6px 8px;border-radius:6px;font:12.5px var(--mono);color:var(--fg2)}
+.df:hover{background:var(--hover)}.df.on{background:var(--panel2);color:var(--fg)}
+.df .st2{width:16px;flex:none;font-weight:700}
+.df .st2.A,.df .st2.\?\?{color:var(--add)}.df .st2.D{color:var(--del)}.df .st2.M{color:var(--warn)}
+.df span:last-child{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dview{flex:1;overflow:auto;min-height:0}
+.dview .diff{max-height:none}
+.dview .hint{padding:20px;color:var(--fg3);text-align:center}
+.dcommit{flex:none;border-top:1px solid var(--line);padding:10px;display:flex;flex-direction:column;gap:8px}
+.dcommit textarea{width:100%;min-height:54px;resize:vertical;background:var(--panel);border:1px solid var(--line2);border-radius:8px;padding:8px 10px;outline:none;font-size:13px;color:var(--fg)}
+.dcommit .row2{display:flex;gap:6px}
+.btn{padding:7px 12px;border-radius:7px;font-weight:600;font-size:12.5px;border:1px solid var(--line2);color:var(--fg2)}
+.btn:hover{background:var(--hover);color:var(--fg)}
+.btn.pri{background:var(--fg);color:#0d0d0f;border-color:var(--fg)}
+.btn.pri:hover{opacity:.9;background:var(--fg)}
+.btn:disabled{opacity:.4;cursor:default}
+/* composer extras */
+.atts{display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px 0}
+.att{display:flex;align-items:center;gap:5px;max-width:240px;padding:3px 6px 3px 8px;border-radius:6px;background:var(--panel2);border:1px solid var(--line2);font:12px var(--mono);color:var(--fg2)}
+.att span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.att i{cursor:pointer;color:var(--fg3);font-style:normal;padding:0 2px}.att i:hover{color:var(--fg)}
+.ac{position:absolute;left:12px;right:12px;bottom:calc(100% + 6px);max-height:260px;overflow:auto;background:var(--panel2);border:1px solid var(--line2);border-radius:10px;padding:4px;box-shadow:0 12px 40px rgba(0,0,0,.5);z-index:20;animation:in .12s ease both}
+.ac button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:7px 9px;border-radius:7px;color:var(--fg2);font-size:13px}
+.ac button.on,.ac button:hover{background:var(--hover);color:var(--fg)}
+.ac button b{font:12.5px var(--mono);color:var(--fg);font-weight:500;min-width:74px}
+.ac button small{color:var(--fg3);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ac .fp{font:12.5px var(--mono)}
+.cboxw{position:relative;max-width:760px;margin:0 auto}
+/* message hover actions */
+.say,.you{position:relative}
+.mact{display:flex;gap:2px;margin-top:4px;opacity:0;transition:opacity .15s}
+.msg:hover .mact{opacity:1}
+.you .mact{justify-content:flex-end}
+.mact button{display:flex;align-items:center;gap:5px;padding:3px 7px;border-radius:6px;color:var(--fg3);font-size:11.5px;font-weight:600}
+.mact button:hover{background:var(--hover);color:var(--fg)}
+.mact svg{width:12px;height:12px}
+.you{flex-direction:column;align-items:flex-end}
 @media (max-width:720px){
   .side{position:fixed;left:0;top:0;bottom:0;z-index:30;transform:translateX(-100%);transition:transform .22s ease;box-shadow:12px 0 40px rgba(0,0,0,.5)}
   .app.open .side{transform:none}
@@ -164,6 +224,7 @@ svg{width:15px;height:15px;flex:none}
       <button class="nb" id="newTask"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2L7 11H5V9z"/><path d="M13 9v3.5a1 1 0 0 1-1 1H3.5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1H7"/></svg>New task<kbd id="kNew"></kbd></button>
     </div>
     <div class="sl">Tasks</div>
+    <label class="srch"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg><input id="tsearch" placeholder="Search tasks"></label>
     <div class="tasks" id="tasks"></div>
     <div class="foot">
       <div class="usage" id="usage" hidden title="Work uses your usage. Chat with your own accounts uses none.">
@@ -180,6 +241,8 @@ svg{width:15px;height:15px;flex:none}
       <button class="ib menu-btn" id="menu" title="Tasks"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2.5 4h11M2.5 8h11M2.5 12h11"/></svg></button>
       <div class="ttl" id="ttl">New task</div>
       <span class="umini" id="usageMini" hidden></span>
+      <button class="gchip" id="gitChip" hidden title="Review and commit changes"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="4.5" cy="3.5" r="1.6"/><circle cx="4.5" cy="12.5" r="1.6"/><circle cx="11.5" cy="5.5" r="1.6"/><path d="M4.5 5.1v5.8M11.5 7.1c0 2.4-2 3-5.5 3.9"/></svg><span id="gitT"></span></button>
+      <button class="ib" id="reviewBtn" title="Review changes"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 1.8h5.5L12.5 5v9.2H4z"/><path d="M6 8h4.5M8.25 5.75v4.5M6 12h4.5"/></svg></button>
       <button class="ib" id="openFolder" title="Open the project folder"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2.5h4.5V7M13.5 2.5 7 9M11.5 9.5v3a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3"/></svg></button>
     </div>
 
@@ -192,19 +255,35 @@ svg{width:15px;height:15px;flex:none}
     </div>
 
     <div class="comp">
+      <div class="cboxw">
+      <div class="ac" id="ac" hidden></div>
       <div class="cbox">
+        <div class="atts" id="atts" hidden></div>
         <textarea id="q" placeholder="What should Expecct build, fix or explain?" rows="2"></textarea>
         <div class="cr">
           <div class="rel"><button class="chip" id="modelBtn"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="2.4"/><path d="M8 1.8v2M8 12.2v2M1.8 8h2M12.2 8h2M3.6 3.6l1.4 1.4M11 11l1.4 1.4M3.6 12.4 5 11M11 5l1.4-1.4"/></svg><span id="modelT">Claude</span></button><div class="pop" id="modelPop" hidden></div></div>
           <div class="rel"><button class="chip" id="runBtn"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="1.8" y="2.5" width="12.4" height="11" rx="2"/><path d="m4.5 6.5 2 1.8-2 1.8M8.5 10.5h3"/></svg><span id="runT">Ask before commands</span></button><div class="pop" id="runPop" hidden></div></div>
+          <button class="chip" id="attachBtn" title="Attach files (or type @ to pick a file)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 7.5 7.8 12.7a3.2 3.2 0 0 1-4.5-4.5l5.6-5.6a2.1 2.1 0 0 1 3 3L6.3 11.2a1.1 1.1 0 0 1-1.5-1.5L9.7 4.8"/></svg></button>
           <span class="grow"></span>
           <button class="send" id="go" aria-label="Send"></button>
         </div>
       </div>
-      <div class="note">Work uses your usage · Files change only inside your project folder · Undo is always there</div>
+      </div>
+      <div class="note">Type <b>/</b> for commands · <b>@</b> to add a file · Work uses your usage · Undo is always there</div>
     </div>
   </main>
 </div>
+
+<aside class="drawer" id="drawer">
+  <div class="dh"><span>Review changes</span><span class="sp"></span><button class="ib" id="dRefresh" title="Refresh"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 8a5 5 0 1 1-1.5-3.6M13 2.5V5h-2.5"/></svg></button><button class="ib" id="dClose" title="Close"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="m4 4 8 8M12 4l-8 8"/></svg></button></div>
+  <div class="dtabs"><button class="on" data-dt="task">This task</button><button data-dt="git">All changes (git)</button></div>
+  <div class="dfiles" id="dfiles"></div>
+  <div class="dview" id="dview"><div class="hint">Pick a file to see what changed</div></div>
+  <div class="dcommit" id="dcommit" hidden>
+    <textarea id="cmsg" placeholder="Commit message"></textarea>
+    <div class="row2"><button class="btn" id="cGen">Write message with AI</button><span class="grow"></span><button class="btn pri" id="cDo">Commit</button></div>
+  </div>
+</aside>
 
 <div class="sheet" id="loginSheet" hidden><div>
   <h2>Log in once</h2>
@@ -344,11 +423,26 @@ function md(src){
 var tasks = load("tasks",[]), cur = null, running = null, info = { platform:"", home:"", workspace:"" };
 function saveTasks(){ save("tasks", tasks.slice(0,40).map(function(t){ return { id:t.id, title:t.title, at:t.at, items:t.items.slice(-200), hist:t.hist.slice(-40) }; })); }
 function ago(ms){ var s=(Date.now()-ms)/1000; return s<60?"now":s<3600?Math.floor(s/60)+"m":s<86400?Math.floor(s/3600)+"h":Math.floor(s/86400)+"d"; }
+var I_EDIT=SVG("<path d=\"M10.5 2.5l3 3L6 13H3v-3z\"/>"), I_DEL=SVG("<path d=\"M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 9h5.8l.6-9\"/>");
 function drawTasks(){
-  $("tasks").innerHTML = tasks.length ? tasks.map(function(t){ return "<button class=\"ti"+(cur&&cur.id===t.id?" on":"")+"\" data-t=\""+t.id+"\">"+(running&&running.task===t?"<i class=\"live\"></i>":"")+"<span class=\"tt\">"+esc(t.title)+"</span><span class=\"tm\">"+ago(t.at)+"</span></button>"; }).join("")
-    : "<div style=\"padding:6px 10px;color:var(--fg3);font-size:12.5px\">No tasks yet</div>";
-  each("[data-t]",function(b){ b.onclick=function(){ openTask(tasks.filter(function(t){ return t.id===b.dataset.t; })[0]); $("app").classList.remove("open"); }; });
+  var f=($("tsearch").value||"").toLowerCase().trim();
+  var list=tasks.filter(function(t){ return !f || t.title.toLowerCase().indexOf(f)>=0 || t.items.some(function(i){ return i.text && String(i.text).toLowerCase().indexOf(f)>=0; }); });
+  $("tasks").innerHTML = list.length ? list.map(function(t){ return "<div class=\"ti"+(cur&&cur.id===t.id?" on":"")+"\" role=\"button\" tabindex=\"0\" data-t=\""+t.id+"\">"+(running&&running.task===t?"<i class=\"live\"></i>":"")+"<span class=\"tt\">"+esc(t.title)+"</span><span class=\"tm\">"+ago(t.at)+"</span><span class=\"ta\"><i data-ren=\""+t.id+"\" title=\"Rename\">"+I_EDIT+"</i><i data-del=\""+t.id+"\" title=\"Delete\">"+I_DEL+"</i></span></div>"; }).join("")
+    : "<div style=\"padding:6px 10px;color:var(--fg3);font-size:12.5px\">"+(f?"No matching tasks":"No tasks yet")+"</div>";
+  each("[data-t]",function(b){ b.onclick=function(e){
+    var t=tasks.filter(function(x){ return x.id===b.dataset.t; })[0]; if (!t) return;
+    if (e.target.closest("[data-ren]")){
+      e.preventDefault(); var tt=b.querySelector(".tt"), inp=document.createElement("input");
+      inp.value=t.title; inp.style.cssText="flex:1;min-width:0;background:var(--panel);border:1px solid var(--line2);border-radius:5px;padding:2px 6px;outline:none;font:inherit;color:var(--fg)";
+      tt.replaceWith(inp); inp.focus(); inp.select();
+      var fin=false, done=function(ok){ if (fin) return; fin=true; if (ok && inp.value.trim()){ t.title=inp.value.trim().slice(0,80); saveTasks(); if (cur===t) $("ttl").textContent=t.title; } drawTasks(); };
+      inp.onkeydown=function(k){ k.stopPropagation(); if (k.key==="Enter") done(true); if (k.key==="Escape") done(false); };
+      inp.onclick=function(k){ k.stopPropagation(); }; inp.onblur=function(){ done(true); };
+      return; }
+    if (e.target.closest("[data-del]")){ if (running && running.task===t){ toast("Stop the task first"); return; } tasks=tasks.filter(function(x){ return x!==t; }); saveTasks(); if (cur===t) newTask(); else drawTasks(); toast("Task deleted"); return; }
+    openTask(t); $("app").classList.remove("open"); }; });
 }
+$("tsearch").addEventListener("input",drawTasks);
 function openTask(t){
   cur=t||null;
   $("ttl").textContent = cur ? cur.title : "New task";
@@ -370,8 +464,12 @@ function nearEnd(){ var s=$("scroll"); return s.scrollHeight-s.scrollTop-s.clien
 function el(cls,html){ var e=document.createElement("div"); e.className=cls; e.innerHTML=html||""; $("log").appendChild(e); return e; }
 function renderItem(it){
   if (it.t!=="step") work=null;
-  if (it.t==="you"){ var e=el("msg you","<div></div>"); e.firstChild.textContent=it.text; return e; }
-  if (it.t==="say") return el("msg say",md(it.text));
+  if (it.t==="you"){ var e=el("msg you","<div></div><div class=\"mact\"><button data-a=\"edit\">"+I_EDIT+"Edit</button><button data-a=\"retry\">"+SVG("<path d=\"M13 8a5 5 0 1 1-1.5-3.6M13 2.5V5h-2.5\"/>")+"Retry</button></div>"); e.firstChild.textContent=it.text;
+    e.querySelector("[data-a=edit]").onclick=function(){ $("q").value=it.text; autosize(); $("q").focus(); };
+    e.querySelector("[data-a=retry]").onclick=function(){ if (running){ toast("Wait until it's done"); return; } $("q").value=it.text; autosize(); go(); };
+    return e; }
+  if (it.t==="say"){ var e2=el("msg say",md(it.text)+"<div class=\"mact\"><button data-a=\"copy\">"+SVG("<rect x=\"5\" y=\"5\" width=\"8.5\" height=\"8.5\" rx=\"2\"/><path d=\"M10.5 5V3.5A1.5 1.5 0 0 0 9 2H3.5A1.5 1.5 0 0 0 2 3.5V9a1.5 1.5 0 0 0 1.5 1.5H5\"/>")+"Copy</button></div>");
+    e2.querySelector("[data-a=copy]").onclick=function(){ navigator.clipboard.writeText(it.text).then(function(){ toast("Copied"); }); }; return e2; }
   if (it.t==="err") return el("msg say err",esc(it.text));
   if (it.t==="changes") return changesEl(it);
   if (it.t==="step"){
@@ -412,7 +510,7 @@ function drawFolder(){
   $("folder").classList.toggle("none",!w);
   $("inProj").textContent = w ? " in "+name : "";
 }
-function pickFolder(){ return A.pickFolder().then(function(w){ if (w){ info.workspace=w; drawFolder(); toast("Working in "+w.split(/[\\/]/).pop()); } return w; }); }
+function pickFolder(){ return A.pickFolder().then(function(w){ if (w){ info.workspace=w; drawFolder(); fileList=null; refreshGit(); toast("Working in "+w.split(/[\\/]/).pop()); } return w; }); }
 $("folder").onclick=pickFolder;
 $("openFolder").onclick=function(){ if (!info.workspace){ pickFolder(); return; } A.tool("open_path",{ path:"." }); };
 
@@ -429,8 +527,64 @@ each("[data-i]",function(b){ b.onclick=function(){ $("q").value=IDEAS[+b.dataset
 /* ---------- composer ---------- */
 function drawGo(){ var b=$("go"), busy=!!(running && cur && running.task===cur); b.innerHTML=busy?I.stop:I.send; b.disabled=!busy && !$("q").value.trim(); b.setAttribute("aria-label",busy?"Stop":"Send"); }
 function autosize(){ var q=$("q"); if (!q.value){ q.style.height=""; } else { q.style.height="auto"; q.style.height=Math.min(220,q.scrollHeight)+"px"; } drawGo(); }
-$("q").addEventListener("input",autosize);
-$("q").addEventListener("keydown",function(e){ if (e.key==="Enter" && !e.shiftKey){ e.preventDefault(); go(); } });
+$("q").addEventListener("input",function(){ autosize(); suggest(); });
+$("q").addEventListener("keydown",function(e){
+  if (!$("ac").hidden){
+    if (e.key==="ArrowDown"||e.key==="ArrowUp"){ e.preventDefault(); acSel=(acSel+(e.key==="ArrowDown"?1:-1)+acItems.length)%acItems.length; drawAc(); return; }
+    if (e.key==="Enter"||e.key==="Tab"){ e.preventDefault(); pickAc(acSel); return; }
+    if (e.key==="Escape"){ e.preventDefault(); hideAc(); return; }
+  }
+  if (e.key==="Enter" && !e.shiftKey){ e.preventDefault(); go(); }
+});
+$("q").addEventListener("blur",function(){ setTimeout(hideAc,150); });
+
+/* attachments */
+var atts=[];
+function drawAtts(){
+  $("atts").hidden=!atts.length;
+  $("atts").innerHTML=atts.map(function(a,i){ return "<span class=\"att\" title=\""+esc(a)+"\">"+I.file+"<span>"+esc(a.split(/[\\/]/).pop())+"</span><i data-rm=\""+i+"\">×</i></span>"; }).join("");
+  each("[data-rm]",function(x){ x.onclick=function(){ atts.splice(+x.dataset.rm,1); drawAtts(); }; });
+}
+function addAtt(p){ if (p && atts.indexOf(p)<0 && atts.length<12){ atts.push(p); drawAtts(); } }
+$("attachBtn").onclick=function(){ A.pickFiles().then(function(list){ (list||[]).forEach(addAtt); $("q").focus(); }); };
+
+/* type / for commands, @ for files */
+var CMDS=[
+  ["/new","Start a new task",function(){ newTask(); }],
+  ["/review","Review all changes and commit",function(){ openDrawer("git"); }],
+  ["/check","Let the AI check your uncommitted changes for bugs",function(){ $("q").value="Run git diff and review my uncommitted changes. List real bugs and risky parts first, then small improvements. Don't change files."; go(); }],
+  ["/init","Write EXPECCT.md with notes about this project",function(){ $("q").value="Look around this project and write EXPECCT.md in the project folder: what the project is, how to run and test it, the folder layout and code style rules. Keep it short. Future tasks will read it."; go(); }],
+  ["/undo","Undo the changes from the last task",function(){ A.undo().then(function(n){ toast(n?"Undid "+n+" change"+(n>1?"s":""):"Nothing to undo"); refreshGit(); }); }],
+  ["/model","Choose the AI model",function(){ setTimeout(function(){ $("modelBtn").click(); },0); }],
+  ["/folder","Choose another project folder",function(){ pickFolder(); }],
+  ["/attach","Attach files",function(){ $("attachBtn").click(); }]
+];
+var acItems=[], acSel=0, acKind="", fileList=null;
+function hideAc(){ $("ac").hidden=true; acItems=[]; }
+function drawAc(){
+  $("ac").innerHTML=acItems.map(function(x,i){ return acKind==="cmd" ? "<button class=\""+(i===acSel?"on":"")+"\" data-ac=\""+i+"\"><b>"+x[0]+"</b><small>"+esc(x[1])+"</small></button>"
+    : "<button class=\""+(i===acSel?"on":"")+"\" data-ac=\""+i+"\">"+I.file+"<span class=\"fp\">"+esc(x)+"</span></button>"; }).join("");
+  $("ac").hidden=!acItems.length;
+  each("[data-ac]",function(b){ b.onmousedown=function(e){ e.preventDefault(); pickAc(+b.dataset.ac); }; });
+  var on=$("ac").querySelector(".on"); if (on) on.scrollIntoView({ block:"nearest" });
+}
+function suggest(){
+  var q=$("q"), v=q.value, pos=q.selectionStart, before=v.slice(0,pos), m;
+  if (/^\/\S*$/.test(v)){ acKind="cmd"; var w=v.toLowerCase(); acItems=CMDS.filter(function(c){ return c[0].indexOf(w)===0; }); acSel=0; drawAc(); return; }
+  if ((m=before.match(/(^|\s)@([^\s@]*)$/))){
+    acKind="file"; var needle=m[2].toLowerCase();
+    var show=function(){ acItems=(fileList||[]).filter(function(f){ return f.toLowerCase().indexOf(needle)>=0; }).sort(function(a,b){ return a.length-b.length; }).slice(0,30); acSel=0; drawAc(); };
+    if (!fileList && info.workspace){ fileList=[]; A.listFiles().then(function(l){ fileList=l||[]; show(); }); } else show();
+    return;
+  }
+  hideAc();
+}
+function pickAc(i){
+  var x=acItems[i]; if (x==null) return;
+  if (acKind==="cmd"){ $("q").value=""; autosize(); hideAc(); x[2](); return; }
+  var q=$("q"), pos=q.selectionStart, before=q.value.slice(0,pos).replace(/@([^\s@]*)$/,"@"+x+" ");
+  q.value=before+q.value.slice(pos); q.selectionStart=q.selectionEnd=before.length; addAtt(x); hideAc(); autosize(); q.focus();
+}
 $("go").onclick=go;
 
 function system(){
@@ -458,17 +612,22 @@ function go(){
   if (puter.auth && !puter.auth.isSignedIn()){ pending=t; $("loginSheet").hidden=false; return; }
   if (!info.workspace){ pickFolder().then(function(w){ if (w) go(); }); return; }
   $("q").value=""; autosize();
-  run(t);
+  var files=atts.slice(); (t.match(/@([^\s@]+)/g)||[]).forEach(function(m){ var f=m.slice(1); if (files.indexOf(f)<0) files.push(f); });
+  atts=[]; drawAtts();
+  run(t, files);
 }
 function stop(){ if (!running) return; running.stopped=true; A.stop(); toast("Stopped"); }
-async function run(t){
+async function run(t, files){
   if (!cur){ cur={ id:Date.now().toString(36), title:t.split("\n")[0].slice(0,70), at:Date.now(), items:[], hist:[] }; tasks.unshift(cur); openTask(cur); }
   var task=cur, job={ task:task, stopped:false }; running=job;
   cur.at=Date.now(); drawTasks(); drawGo();
   if (cur===task) push({ t:"you", text:t });
-  task.hist.push({ role:"user", content:t });
+  if (files && files.length && cur===task) push({ t:"say", text:"Attached: "+files.map(function(f){ return "`"+f+"`"; }).join(", ") });
+  task.hist.push({ role:"user", content: t + (files && files.length ? "\n\nAttached files (read them with read_file): " + files.join(", ") : "") });
   await resolve();
-  var model=currentModel(), msgs=[{ role:"system", content:system() }].concat(task.hist.slice(-40)), changed={};
+  var notes=null; try { notes = await A.notes(); } catch(e){}
+  var sys=system() + (notes ? "\n\nProject notes from " + notes.name + " (follow them):\n" + notes.text : "");
+  var model=currentModel(), msgs=[{ role:"system", content:sys }].concat(task.hist.slice(-40)), changed={};
   var think=null;
   function showThink(on){ if (think){ think.remove(); think=null; } if (on && cur===task){ think=document.createElement("div"); think.className="thinking"; think.innerHTML="<i class=\"spin\"></i><span class=\"shine\">Working…</span>"; $("log").appendChild(think); if (nearEnd()) scrollEnd(); } }
   function add(it){ if (cur===task) return push(it); task.items.push(it); return it; }
@@ -511,9 +670,75 @@ async function run(t){
   var files=Object.keys(changed).map(function(k){ return changed[k]; });
   if (files.length) add({ t:"changes", files:files });
   if (job.stopped) add({ t:"err", text:"Stopped." });
-  running=null; task.at=Date.now(); saveTasks(); drawTasks(); drawGo(); drawUsage();
+  running=null; task.at=Date.now(); saveTasks(); drawTasks(); drawGo(); drawUsage(); refreshGit(); fileList=null;
   if (cur===task && nearEnd()) scrollEnd();
 }
+
+/* ---------- git + review (like Codex) ---------- */
+var git={ repo:false, files:[] }, dTab="task", dSel=null;
+function refreshGit(){
+  if (!info.workspace){ $("gitChip").hidden=true; return Promise.resolve(); }
+  return A.git("status").then(function(g){
+    git=g||{ repo:false, files:[] };
+    $("gitChip").hidden=!git.repo;
+    if (git.repo) $("gitT").innerHTML=esc(git.branch)+(git.files.length?" · <b>"+git.files.length+" changed</b>":"");
+    if ($("drawer").classList.contains("open")) drawDrawer();
+  }).catch(function(){});
+}
+function taskFiles(){
+  var map={};
+  (cur?cur.items:[]).forEach(function(it){ if (it.t==="step" && it.ok && it.diff){ var p=(it.target||""); var f=map[p]||(map[p]={ path:p, add:[], del:[] }); f.add=f.add.concat(it.diff.add); f.del=f.del.concat(it.diff.del); } });
+  return Object.keys(map).map(function(k){ return map[k]; });
+}
+function unified(t){
+  return "<div class=\"diff\">"+String(t||"").split("\n").slice(0,4000).map(function(l){
+    var c = /^(\+\+\+|---|diff |index )/.test(l) ? "h" : l[0]==="+" ? "a" : l[0]==="-" ? "d" : /^@@/.test(l) ? "h" : "";
+    return "<div class=\""+c+"\">"+esc(l)+"</div>"; }).join("")+"</div>";
+}
+function drawDrawer(){
+  each("[data-dt]",function(b){ b.classList.toggle("on",b.dataset.dt===dTab); });
+  var box=$("dfiles"), view=$("dview");
+  $("dcommit").hidden = dTab!=="git" || !git.repo;
+  if (dTab==="task"){
+    var fs=taskFiles();
+    box.innerHTML = fs.length ? fs.map(function(f,i){ return "<button class=\"df"+(dSel===f.path?" on":"")+"\" data-df=\""+i+"\"><span class=\"st2 M\">±</span><span>"+esc(f.path)+"</span></button>"; }).join("") : "<div class=\"hint\" style=\"padding:14px;color:var(--fg3)\">This task hasn't changed any files yet.</div>";
+    each("[data-df]",function(b){ b.onclick=function(){ var f=fs[+b.dataset.df]; dSel=f.path; drawDrawer(); view.innerHTML=diffHtml(f); }; });
+    if (!dSel) view.innerHTML="<div class=\"hint\">Pick a file to see what changed</div>";
+    return;
+  }
+  if (!git.repo){
+    box.innerHTML="<div style=\"padding:16px;color:var(--fg2);display:flex;flex-direction:column;gap:10px;align-items:flex-start\">This folder doesn't use git yet. Git saves versions of your project so you can always go back.<button class=\"btn pri\" id=\"gInit\">Turn on git</button></div>";
+    view.innerHTML=""; $("gInit").onclick=function(){ A.git("init").then(function(r){ toast(r.ok?"Git is on":"Couldn't start git – is it installed?"); refreshGit(); }); };
+    return;
+  }
+  box.innerHTML = git.files.length ? git.files.map(function(f,i){ var k=f.s==="??"?"A":f.s.slice(0,1); return "<button class=\"df"+(dSel===f.path?" on":"")+"\" data-gf=\""+i+"\"><span class=\"st2 "+k+"\">"+esc(k)+"</span><span>"+esc(f.path)+"</span></button>"; }).join("") : "<div style=\"padding:14px;color:var(--fg3)\">No changes – everything is committed.</div>";
+  each("[data-gf]",function(b){ b.onclick=function(){ var f=git.files[+b.dataset.gf]; dSel=f.path; drawDrawer(); view.innerHTML="<div class=\"hint\">Loading…</div>"; A.git("diff",f.path).then(function(r){ view.innerHTML = r && r.out ? unified(r.out) : "<div class=\"hint\">No text changes (binary file?)</div>"; }); }; });
+  if (!dSel) view.innerHTML="<div class=\"hint\">Pick a file to see what changed</div>";
+  $("cDo").disabled=!git.files.length;
+}
+function openDrawer(tab){ dTab=tab||dTab; dSel=null; $("drawer").classList.add("open"); refreshGit().then(drawDrawer); drawDrawer(); }
+$("reviewBtn").onclick=function(){ if ($("drawer").classList.contains("open")) $("drawer").classList.remove("open"); else openDrawer(taskFiles().length?"task":"git"); };
+$("gitChip").onclick=function(){ openDrawer("git"); };
+$("dClose").onclick=function(){ $("drawer").classList.remove("open"); };
+$("dRefresh").onclick=function(){ refreshGit(); };
+each("[data-dt]",function(b){ b.onclick=function(){ dTab=b.dataset.dt; dSel=null; drawDrawer(); }; });
+$("cDo").onclick=function(){
+  var m=$("cmsg").value.trim(); if (!m){ toast("Write a commit message (or let the AI write it)"); $("cmsg").focus(); return; }
+  $("cDo").disabled=true; A.git("commit",m).then(function(r){ toast(r.ok?"Committed":"Commit failed: "+String(r.out||"").slice(0,80)); if (r.ok) $("cmsg").value=""; refreshGit(); });
+};
+$("cGen").onclick=async function(){
+  if (!git.files.length){ toast("Nothing to commit"); return; }
+  if (!window.puter || !puter.auth.isSignedIn()){ $("loginSheet").hidden=false; return; }
+  $("cGen").disabled=true; $("cGen").textContent="Writing…";
+  try {
+    var diffs=[]; for (var i=0;i<Math.min(git.files.length,8);i++){ var r=await A.git("diff",git.files[i].path); diffs.push((r&&r.out||"").slice(0,3000)); }
+    await resolve();
+    var res=await puter.ai.chat([{ role:"user", content:"Write one short git commit message (max 72 chars, imperative, no quotes) for these changes. Files: "+git.files.map(function(f){ return f.path; }).join(", ")+"\n\n"+diffs.join("\n").slice(0,16000) }], false, currentModel()?{ model:currentModel() }:{});
+    $("cmsg").value=textOf(res && res.message).trim().split("\n")[0].replace(/^["'`]+|["'`]+$/g,"");
+  } catch(e){ toast("Couldn't write it – type your own"); }
+  $("cGen").disabled=false; $("cGen").textContent="Write message with AI";
+};
+window.addEventListener("focus",refreshGit);
 
 /* ---------- usage (Work counts against your monthly usage) ---------- */
 async function drawUsage(){
@@ -541,7 +766,7 @@ D.onToken(function(tok){ try { puter.setAuthToken(tok); toast("You're logged in"
 drawModel(); drawRun(); drawTasks(); drawGo();
 if (window.puter) resolve();   // the list of models works without logging in
 drawUsage();
-A.info().then(function(i){ info=i||info; autoRun=!!info.autoRun; drawFolder(); drawRun(); });
+A.info().then(function(i){ info=i||info; autoRun=!!info.autoRun; drawFolder(); drawRun(); refreshGit(); });
 openTask(tasks[0] && Date.now()-tasks[0].at<6*3600*1000 ? tasks[0] : null);
 </script>
 </body>
