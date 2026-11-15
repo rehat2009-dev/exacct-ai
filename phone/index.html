@@ -66,6 +66,16 @@ header b{font-size:19px;font-weight:800;letter-spacing:-.01em;flex:1}
 .install img{width:40px;height:40px;border-radius:10px}
 .install div{flex:1;font-weight:700;font-size:14px}
 .install button{padding:9px 14px;border-radius:999px;background:#fff;color:#0a0a0d;font-weight:800;font-size:14px}
+.sendrow.d4{grid-template-columns:repeat(4,1fr)}
+.send.all{background:#fff;color:#0a0a0d}
+.sizes{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.sz{display:flex;flex-direction:column;align-items:center;gap:7px;padding:10px 4px 9px;border-radius:14px;background:var(--card);border:1px solid var(--line);font-size:12px;font-weight:600;color:var(--muted)}
+.sz.on{border-color:var(--accent);color:var(--fg);box-shadow:0 0 0 1px var(--accent)}
+.sz .scr{position:relative;width:44px;height:28px;border-radius:4px;background:rgba(255,255,255,.07)}
+.sz .scr i{position:absolute;border-radius:2px;background:var(--muted)}
+.sz.on .scr i{background:var(--accent)}
+@media (min-width:700px){.wrap{max-width:640px}body{padding-top:28px}}
+@media (max-width:560px){.sizes{grid-template-columns:repeat(3,1fr)}}
 </style>
 </head>
 <body>
@@ -76,12 +86,15 @@ header b{font-size:19px;font-weight:800;letter-spacing:-.01em;flex:1}
     <button class="icon-btn" id="styleBtn" aria-label="Style"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5l1.6 3.9 4 .3-3.1 2.6 1 4L8 10.1 4.5 12.3l1-4L2.4 5.7l4-.3z"/></svg></button>
   </header>
 
-  <div class="install" id="install" hidden><img src="icon-192.png" alt=""><div>Add to your home screen</div><button id="installBtn">Add</button></div>
+  <div class="install" id="install" hidden><img src="icon-192.png" alt=""><div id="installT">Add to your home screen</div><button id="installBtn">Add</button></div>
 
   <div class="ask">
-    <textarea id="q" placeholder="Ask anything…" rows="3"></textarea>
+    <textarea id="q" placeholder="Ask anything…" rows="3" autofocus></textarea>
     <div class="sendrow" id="sendrow"></div>
   </div>
+
+  <div class="lbl desk" hidden>Window size</div>
+  <div class="sizes desk" id="sizes" hidden></div>
 
   <div class="lbl">Open</div>
   <div class="ais" id="ais"></div>
@@ -98,6 +111,12 @@ header b{font-size:19px;font-weight:800;letter-spacing:-.01em;flex:1}
   <input class="field" id="nm" maxlength="24" aria-label="Name">
   <div class="row" id="accs"></div>
   <button class="big" id="styleDone">Done</button>
+</div></div>
+
+<div class="sheet" id="popSheet" hidden><div>
+  <h2>Allow pop-ups once</h2>
+  <ol class="steps"><li>Click the <b>blocked pop-up</b> icon at the right of the address bar</li><li>Choose <b>Always allow</b></li><li>Try again</li></ol>
+  <button class="big" id="popDone">OK</button>
 </div></div>
 
 <div class="sheet" id="iosSheet" hidden><div>
@@ -120,7 +139,8 @@ function $(id){ return document.getElementById(id); }
 function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]; }); }
 function load(k, d){ try { var v = JSON.parse(localStorage.getItem("exacct." + k)); return v == null ? d : v; } catch (e) { return d; } }
 function save(k, v){ try { localStorage.setItem("exacct." + k, JSON.stringify(v)); } catch (e) {} }
-var cfg = load("cfg", { name: "Expecct", accent: "#8b5cf6" });
+var cfg = load("cfg", { name: "Expecct", accent: "#8b5cf6", size: "medium" });
+if (!cfg.size) cfg.size = "medium";
 if (cfg.name === "Exacct AI") cfg.name = "Expecct";
 var recent = load("recent", []);
 var tt;
@@ -131,19 +151,64 @@ function applyStyle(){
   $("name").textContent = cfg.name; document.title = cfg.name;
 }
 
-/* open + ask */
-$("ais").innerHTML = AIS.map(function(a){ return "<a class=\"ai\" href=\"" + a.open + "\" style=\"--c:" + a.color + "\"><span>" + a.short + "</span>" + a.label + "</a>"; }).join("");
-$("sendrow").innerHTML = AIS.map(function(a){ return "<button class=\"send\" data-ai=\"" + a.id + "\"><i style=\"background:" + a.color + "\"></i>" + a.label + "</button>"; }).join("");
+/* where are we? phone = open in the same tab, computer = open as its own window */
+var isPhone = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (matchMedia("(pointer: coarse)").matches && innerWidth < 820);
+var SIZES = [["small","Small",[66,40,30,56]],["medium","Medium",[25,10,50,80]],["big","Big",[8,5,84,90]],["left","Left",[0,0,50,100]],["right","Right",[50,0,50,100]],["full","Full",[0,0,100,100]]];
+var wins = {};
+function aiOf(id){ return AIS.filter(function(x){ return x.id === id; })[0]; }
+function box(size, slot){
+  var W = screen.availWidth, H = screen.availHeight, X = screen.availLeft || 0, Y = screen.availTop || 0, r = Math.round, w, h, x, y;
+  if (slot != null) { w = r(W / 3); h = H; x = X + slot * w; y = Y; }
+  else if (size === "small") { w = Math.min(460, W); h = Math.min(760, H); x = X + W - w - 16; y = Y + H - h - 16; }
+  else if (size === "big") { w = r(W * .84); h = r(H * .9); x = X + r((W - w) / 2); y = Y + r((H - h) / 2); }
+  else if (size === "left") { w = r(W / 2); h = H; x = X; y = Y; }
+  else if (size === "right") { w = r(W / 2); h = H; x = X + W - w; y = Y; }
+  else if (size === "full") { w = W; h = H; x = X; y = Y; }
+  else { w = Math.min(960, W); h = Math.min(820, H); x = X + r((W - w) / 2); y = Y + r((H - h) / 2); }
+  return "popup=yes,width=" + w + ",height=" + Math.max(300, h - 38) + ",left=" + x + ",top=" + y;
+}
+function openAI(a, url, slot){
+  if (isPhone) { location.href = url; return true; }
+  var old = wins[a.id];
+  if (old && !old.closed) { try { old.close(); } catch (e) {} }
+  var w = window.open(url, "expecct-" + a.id, box(cfg.size, slot));
+  if (!w) { $("popSheet").hidden = false; return false; }
+  wins[a.id] = w;
+  return true;
+}
+function ask(a, t, slot){
+  if (a.ask) return openAI(a, a.ask(t), slot);
+  copy(t); toast("Copied – press " + (/Mac/.test(navigator.platform) ? "⌘V" : "Ctrl+V") + " in Gemini");
+  return openAI(a, a.open, slot);
+}
+$("ais").innerHTML = AIS.map(function(a){ return "<a class=\"ai\" href=\"" + a.open + "\" data-open=\"" + a.id + "\" style=\"--c:" + a.color + "\"><span>" + a.short + "</span>" + a.label + "</a>"; }).join("");
+Array.prototype.forEach.call(document.querySelectorAll("[data-open]"), function(el){
+  el.onclick = function(e){ if (isPhone) return; e.preventDefault(); openAI(aiOf(el.dataset.open), aiOf(el.dataset.open).open); };
+});
+$("sendrow").innerHTML = AIS.map(function(a){ return "<button class=\"send\" data-ai=\"" + a.id + "\"><i style=\"background:" + a.color + "\"></i>" + a.label + "</button>"; }).join("") +
+  (isPhone ? "" : "<button class=\"send all\" data-ai=\"all\">All 3</button>");
+if (!isPhone) $("sendrow").classList.add("d4");
 Array.prototype.forEach.call(document.querySelectorAll(".send"), function(b){
   b.onclick = function(){
     var t = $("q").value.trim();
-    var a = AIS.filter(function(x){ return x.id === b.dataset.ai; })[0];
     if (!t) { $("q").focus(); toast("Type your question first"); return; }
-    remember(t, a.id);
-    if (a.ask) { location.href = a.ask(t); return; }
-    copy(t).then(function(){ toast("Copied – paste it in " + a.label); setTimeout(function(){ location.href = a.open; }, 900); });
+    remember(t, b.dataset.ai === "all" ? "chatgpt" : b.dataset.ai);
+    if (b.dataset.ai === "all") { for (var i = 0; i < AIS.length; i++) if (!ask(AIS[i], t, i)) return; return; }
+    var a = aiOf(b.dataset.ai);
+    if (!a.ask && isPhone) { copy(t).then(function(){ toast("Copied – paste it in " + a.label); setTimeout(function(){ location.href = a.open; }, 900); }); return; }
+    ask(a, t);
   };
 });
+$("q").addEventListener("keydown", function(e){ if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { var b = document.querySelector(".send"); if (b) b.click(); } });
+
+/* window size (computer) */
+function drawSizes(){
+  $("sizes").innerHTML = SIZES.map(function(z){ var r = z[2]; return "<button class=\"sz" + (cfg.size === z[0] ? " on" : "") + "\" data-size=\"" + z[0] + "\"><span class=\"scr\"><i style=\"left:" + r[0] + "%;top:" + r[1] + "%;width:" + r[2] + "%;height:" + r[3] + "%\"></i></span>" + z[1] + "</button>"; }).join("");
+  Array.prototype.forEach.call(document.querySelectorAll("[data-size]"), function(b){ b.onclick = function(){ cfg.size = b.dataset.size; save("cfg", cfg); drawSizes(); toast(b.textContent + " – opens like this"); }; });
+}
+if (!isPhone) { Array.prototype.forEach.call(document.querySelectorAll(".desk"), function(e){ e.hidden = false; }); drawSizes(); }
+$("popDone").onclick = function(){ $("popSheet").hidden = true; };
+
 function copy(t){
   if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(t).catch(function(){});
   var x = document.createElement("textarea"); x.value = t; document.body.appendChild(x); x.select();
@@ -191,6 +256,7 @@ $("styleSheet").onclick = function(e){ if (e.target.id === "styleSheet") $("styl
 var standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone;
 var isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
 var deferred = null;
+if (!isPhone) { $("installT").textContent = "Install Expecct – opens like an app, no download"; $("installBtn").textContent = "Install"; }
 window.addEventListener("beforeinstallprompt", function(e){ e.preventDefault(); deferred = e; if (!standalone) $("install").hidden = false; });
 if (isIOS && !standalone) $("install").hidden = false;
 $("installBtn").onclick = function(){
