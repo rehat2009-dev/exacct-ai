@@ -43,7 +43,16 @@ nav{display:flex;align-items:center;justify-content:space-between;gap:12px}
 @keyframes shine{from{background-position:150% 0}to{background-position:-100% 0}}
 .ais{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;animation:fade .8s ease .6s both}
 .ais span{display:flex;align-items:center;gap:7px;font-size:.82rem;font-weight:600;color:#c9c9d1;border:1px solid var(--line);border-radius:999px;padding:5px 12px;background:rgba(255,255,255,.03)}
-.ais i{width:8px;height:8px;border-radius:50%}
+.ais img{width:16px;height:16px;border-radius:4px;background:#fff;padding:1px}
+.cta{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;animation:fade .8s ease .5s both}
+.cta a{display:inline-flex;align-items:center;gap:9px;padding:14px 24px;border-radius:999px;font-weight:800;font-size:.98rem;text-decoration:none;transition:transform .2s,box-shadow .2s,background .2s}
+.cta svg{width:16px;height:16px}
+.cta .p1{background:#fff;color:#0a0a0b}
+.cta .p1:hover{transform:translateY(-2px);box-shadow:0 14px 40px color-mix(in srgb,var(--accent) 55%,transparent)}
+.cta .p2{background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--fg)}
+.cta .p2:hover{transform:translateY(-2px);background:rgba(255,255,255,.1)}
+.cta .p2 svg{transition:transform .3s}
+.cta .p2:hover svg{transform:translateY(2px)}
 @keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 
 /* the screen */
@@ -117,7 +126,7 @@ nav{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .dtop img{width:46px;height:46px}
 .dtop b{display:block;font-size:1.05rem}
 .dtop small{display:flex;align-items:center;gap:6px;color:var(--muted);font-weight:600}
-.dtop small i{width:8px;height:8px;border-radius:50%;background:var(--c)}
+.dtop small img{width:15px;height:15px;border-radius:4px;background:#fff;padding:1px}
 .dls{display:flex;gap:8px}
 .dl{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;border-radius:999px;padding:10px;font-weight:700;font-size:.85rem;text-decoration:none;border:1px solid var(--line);color:var(--fg);background:var(--surface-2);transition:transform .2s,box-shadow .2s}
 .dl svg{width:14px;height:14px}
@@ -133,6 +142,35 @@ nav{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .webapp .open svg{width:16px;height:16px}
 .dlor{color:var(--muted);font-weight:700;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;margin:4px 2px 12px}
 @media(max-width:560px){.webapp{flex-wrap:wrap}.webapp .open{flex:1 1 100%;justify-content:center}}
+/* how it works */
+.how{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;counter-reset:h}
+@media (max-width:760px){.how{grid-template-columns:1fr}}
+.step{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:22px;display:flex;flex-direction:column;gap:10px;overflow:hidden;counter-increment:h;
+  transition:transform .3s cubic-bezier(.2,.8,.2,1),border-color .3s}
+.step:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--accent) 50%,transparent)}
+.step::before{content:counter(h);width:34px;height:34px;border-radius:11px;display:grid;place-items:center;font-weight:800;color:#fff;background:linear-gradient(135deg,var(--accent),var(--pink));box-shadow:0 8px 22px -6px var(--accent)}
+.step::after{content:"";position:absolute;inset:-1px;background:radial-gradient(260px circle at var(--mx,50%) var(--my,0%),color-mix(in srgb,var(--accent) 22%,transparent),transparent 60%);opacity:0;transition:opacity .3s;pointer-events:none}
+.step:hover::after{opacity:1}
+.step b{font-size:1.15rem;letter-spacing:-.01em}
+.step span{color:var(--muted);font-weight:600;font-size:.9rem}
+.reveal.in .step{animation:pop .7s cubic-bezier(.2,.8,.2,1) both}
+.reveal.in .step:nth-child(2){animation-delay:.12s}.reveal.in .step:nth-child(3){animation-delay:.24s}
+@keyframes pop{from{opacity:0;transform:translateY(24px) scale(.97)}}
+
+/* never stuck demo */
+.flow{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:22px;display:flex;flex-direction:column;gap:12px;max-width:620px;width:100%;margin:0 auto}
+.lane{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:var(--surface-2);border:1px solid transparent;transition:border-color .4s,opacity .4s,transform .4s}
+.lane img{width:30px;height:30px;border-radius:9px;background:#fff;padding:4px;flex:none}
+.lane .nm{width:72px;font-weight:800;font-size:.92rem}
+.lane .use{flex:1;height:8px;border-radius:9px;background:rgba(255,255,255,.07);overflow:hidden}
+.lane .use i{display:block;height:100%;width:0;border-radius:9px;background:var(--c);transition:width .3s linear}
+.lane .tg{width:84px;text-align:right;font-size:.78rem;font-weight:800;color:var(--muted)}
+.lane.on{border-color:color-mix(in srgb,var(--c) 60%,transparent);transform:scale(1.02)}
+.lane.on .tg{color:#fff}
+.lane.out{opacity:.45}
+.lane.out .tg{color:#f5b041}
+.flow .msg2{text-align:center;font-weight:700;font-size:.9rem;color:var(--muted);min-height:1.4em;transition:opacity .3s}
+.flow .msg2 b{color:#fff}
 footer{text-align:center;color:var(--muted);font-size:.72rem;letter-spacing:.35em;text-transform:uppercase}
 
 /* download help */
@@ -167,9 +205,28 @@ footer{text-align:center;color:var(--muted);font-size:.72rem;letter-spacing:.35e
 
   <section class="hero">
     <h1><span>Any size.</span><br><span>Any place.</span><br><span class="shine">Your style.</span></h1>
-    <div class="ais"><span><i style="background:#10a37f"></i>ChatGPT</span><span><i style="background:#d97757"></i>Claude</span><span><i style="background:#4f8cff"></i>Gemini</span></div>
+    <div class="ais" id="ais"></div>
+    <div class="cta">
+      <a class="p1" href="app/">Open Expecct<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h9.5M8.5 3.5 13 8l-4.5 4.5"/></svg></a>
+      <a class="p2" href="app/?install=1"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M3 13.5h10"/></svg>Install app</a>
+    </div>
     <div class="screen" id="screen1"></div>
     <span class="sizetag" id="tag"></span>
+  </section>
+
+  <section class="sec reveal">
+    <div class="label">How it works</div>
+    <div class="how" id="how">
+      <div class="step"><b>Open</b><span>Open Expecct in Chrome, Edge or Safari. Nothing to download.</span></div>
+      <div class="step"><b>Sign in once</b><span>Each AI opens in a real browser window, so Google, Apple and email sign-in all work.</span></div>
+      <div class="step"><b>Install</b><span>Press <b style="font-size:inherit">Install app</b> and Expecct gets its own icon, like any app.</span></div>
+    </div>
+  </section>
+
+  <section class="sec reveal">
+    <div class="label">Never stuck</div>
+    <h2 class="big">Out of messages?<br>The next AI takes over.</h2>
+    <div class="flow" id="flow"></div>
   </section>
 
   <section class="sec reveal">
@@ -197,8 +254,8 @@ footer{text-align:center;color:var(--muted);font-size:.72rem;letter-spacing:.35e
     <div class="label">Get Expecct</div>
     <div class="webapp">
       <img src="icon.png" alt="">
-      <div class="wt"><b>Open in your browser</b><span>Sign-in works · nothing to download · install as an app</span></div>
-      <a class="open" href="app/">Open Expecct<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h9.5M8.5 3.5 13 8l-4.5 4.5"/></svg></a>
+      <div class="wt"><b>Expecct app</b><span>Sign-in works · no download · its own icon</span></div>
+      <a class="open" href="app/?install=1">Install app<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h9.5M8.5 3.5 13 8l-4.5 4.5"/></svg></a>
     </div>
     <div class="dlor">Or download the desktop app</div>
     <div class="dlgrid" id="dlgrid"></div>
@@ -223,6 +280,10 @@ var SIZES = [["mini","Mini",[73,52,22,40]],["small","Small",[36,16,28,64]],["med
 var ACC = ["#8b5cf6","#ec4899","#10a37f","#4f8cff","#f59e0b","#ef4444","#06b6d4","#e4e4e7"];
 var SHAPES = ["rounded","circle","squircle","diamond"];
 var AIS = [["ChatGPT","#10a37f"],["Claude","#d97757"],["Gemini","#4f8cff"]];
+var DOM = { ChatGPT: "chatgpt.com", Claude: "claude.ai", Gemini: "gemini.google.com" };
+function icSrc(d){ return ["https://www.google.com/s2/favicons?domain=" + d + "&sz=128", "https://icons.duckduckgo.com/ip3/" + d + ".ico", "https://" + d + "/favicon.ico"]; }
+function icNext(img){ var l = icSrc(img.dataset.d), n = +img.dataset.n + 1; if (n < l.length) { img.dataset.n = n; img.src = l[n]; } else img.style.visibility = "hidden"; }
+function fav(name){ var d = DOM[name]; return "<img src=\"" + icSrc(d)[0] + "\" data-d=\"" + d + "\" data-n=\"0\" alt=\"\" referrerpolicy=\"no-referrer\" onload=\"if(this.naturalWidth<=16)icNext(this)\" onerror=\"icNext(this)\">"; }
 var st = { name: "Expecct", shape: "rounded", ai: 0 };
 function $(id){ return document.getElementById(id); }
 function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]; }); }
@@ -313,11 +374,11 @@ var tgt = TARGET ? " target=\"_blank\" rel=\"noopener\"" : "";
 $("dlgrid").innerHTML = AIS.map(function(a){
   var w = "<a class=\"dl" + (isMac ? "" : " main") + "\" href=\"" + REL + "Expecct-" + a[0] + "-Windows.exe\"" + tgt + ">" + WIN + "Windows</a>";
   var m = "<a class=\"dl" + (isMac ? " main" : "") + "\" href=\"" + REL + "Expecct-" + a[0] + "-Mac.dmg\"" + tgt + ">" + MAC + "Mac</a>";
-  return "<div class=\"dcard\" style=\"--c:" + a[1] + "\"><div class=\"dtop\"><img src=\"icon.png\" alt=\"\"><div><b>Expecct</b><small><i></i>" + a[0] + "</small></div></div><div class=\"dls\">" + (isMac ? m + w : w + m) + "</div></div>";
+  return "<div class=\"dcard\" style=\"--c:" + a[1] + "\"><div class=\"dtop\"><img src=\"icon.png\" alt=\"\"><div><b>Expecct</b><small>" + fav(a[0]) + a[0] + "</small></div></div><div class=\"dls\">" + (isMac ? m + w : w + m) + "</div></div>";
 }).join("");
 var isPhone = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (matchMedia("(pointer: coarse)").matches && innerWidth < 820);
 var PHONE = "<svg viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" aria-hidden=\"true\"><rect x=\"4\" y=\"1.5\" width=\"8\" height=\"13\" rx=\"2\"/><path d=\"M7 12h2\"/></svg>";
-var phoneCard = "<div class=\"dcard\" style=\"--c:#8b5cf6\"><div class=\"dtop\"><img src=\"" + document.querySelector(".logo img").getAttribute("src") + "\" alt=\"\"><div><b>Expecct</b><small><i></i>Phone</small></div></div><div class=\"dls\"><a class=\"dl main\" href=\"phone/\">" + PHONE + "Open phone app</a></div></div>";
+var phoneCard = "<div class=\"dcard\" style=\"--c:#8b5cf6\"><div class=\"dtop\"><img src=\"" + document.querySelector(".logo img").getAttribute("src") + "\" alt=\"\"><div><b>Expecct</b><small>Phone</small></div></div><div class=\"dls\"><a class=\"dl main\" href=\"phone/\">" + PHONE + "Open phone app</a></div></div>";
 $("dlgrid").insertAdjacentHTML(isPhone ? "afterbegin" : "beforeend", phoneCard);
 if (isPhone) { var nb = document.querySelector("nav .pill"); nb.firstChild.textContent = "Get the app "; nb.setAttribute("href", "phone/"); Array.prototype.forEach.call(document.querySelectorAll(".dl.main"), function(x){ if (x.getAttribute("href") !== "phone/") x.classList.remove("main"); }); }
 var STEPS = {
@@ -357,6 +418,37 @@ if (!RM) {
     requestAnimationFrame(loop);
   })();
 }
+/* AI chips */
+$("ais").innerHTML = AIS.map(function(a){ return "<span>" + fav(a[0]) + a[0] + "</span>"; }).join("");
+
+/* spotlight on step cards */
+Array.prototype.forEach.call(document.querySelectorAll(".step"), function(c){
+  c.addEventListener("pointermove", function(e){ var r = c.getBoundingClientRect(); c.style.setProperty("--mx", (e.clientX - r.left) + "px"); c.style.setProperty("--my", (e.clientY - r.top) + "px"); });
+});
+
+/* never stuck demo: usage fills up, then the next AI takes over */
+$("flow").innerHTML = AIS.map(function(a, i){ return "<div class=\"lane\" data-l=\"" + i + "\" style=\"--c:" + a[1] + "\">" + fav(a[0]) + "<span class=\"nm\">" + a[0] + "</span><span class=\"use\"><i></i></span><span class=\"tg\"></span></div>"; }).join("") + "<div class=\"msg2\" id=\"flowMsg\"></div>";
+(function(){
+  var lanes = document.querySelectorAll(".lane"), on = 0, fill = 0;
+  function tick(){
+    fill += RM ? 100 : 4;
+    Array.prototype.forEach.call(lanes, function(l, i){
+      var bar = l.querySelector(".use i"), tg = l.querySelector(".tg");
+      l.classList.toggle("on", i === on); l.classList.toggle("out", i < on);
+      bar.style.width = (i < on ? 100 : i === on ? Math.min(fill, 100) : 0) + "%";
+      tg.textContent = i < on ? "Limit hit" : i === on ? "Answering" : "Ready";
+    });
+    if (fill >= 100) {
+      var next = (on + 1) % lanes.length;
+      $("flowMsg").innerHTML = next ? AIS[on][0] + " is out <b>→ " + AIS[next][0] + "</b> takes over" : "All back – <b>start again</b>";
+      on = next; fill = 0;
+      if (!on) Array.prototype.forEach.call(lanes, function(l){ l.querySelector(".use i").style.width = "0%"; });
+      setTimeout(tick, 1300);
+    } else setTimeout(tick, 90);
+  }
+  tick();
+})();
+
 buildScreens(); markTile();
 </script>
 
