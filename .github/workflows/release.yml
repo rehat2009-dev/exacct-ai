@@ -1,7 +1,8 @@
-# Builds Exacct AI for Windows and Mac, for ChatGPT, Claude and Gemini,
-# and puts the 6 files on the GitHub Releases page.
-# Start it: push a tag like v1.0.0, or press "Run workflow" on the Actions tab.
-name: Build Exacct AI
+# Builds Expecct for Windows and Mac, for ChatGPT, Claude and Gemini,
+# and puts the files on the GitHub Releases page (tag "latest").
+# The apps read version.json from there and update themselves.
+# Start it: push a tag like v3.0.0, or press "Run workflow" on the Actions tab.
+name: Build Expecct
 
 on:
   push:
@@ -26,7 +27,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - run: npm install --no-audit --no-fund
 
       - name: Build Windows installer
@@ -35,39 +36,51 @@ jobs:
         run: >
           npx electron-builder --win nsis --x64 --publish never
           -c.extraMetadata.exacctAi=${{ matrix.ai.id }}
-          -c.productName="Exacct AI ${{ matrix.ai.label }}"
+          -c.productName="Expecct ${{ matrix.ai.label }}"
           -c.appId=no.expect.exacctai.${{ matrix.ai.id }}
-          -c.artifactName="Exacct-AI-${{ matrix.ai.label }}-Windows.exe"
+          -c.artifactName="Expecct-${{ matrix.ai.label }}-Windows.exe"
 
       - name: Build Mac app
         if: runner.os == 'macOS'
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
         run: >
-          npx electron-builder --mac dmg --universal --publish never
+          npx electron-builder --mac dmg zip --universal --publish never
           -c.extraMetadata.exacctAi=${{ matrix.ai.id }}
-          -c.productName="Exacct AI ${{ matrix.ai.label }}"
+          -c.productName="Expecct ${{ matrix.ai.label }}"
           -c.appId=no.expect.exacctai.${{ matrix.ai.id }}
-          -c.artifactName="Exacct-AI-${{ matrix.ai.label }}-Mac.dmg"
+          -c.artifactName='Expecct-${{ matrix.ai.label }}-Mac.${ext}'
 
       - uses: actions/upload-artifact@v4
         with:
-          name: exacct-${{ matrix.ai.id }}-${{ runner.os }}
+          name: expecct-${{ matrix.ai.id }}-${{ runner.os }}
           path: |
             dist/*.exe
             dist/*.dmg
+            dist/*.zip
 
   release:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           path: out
           merge-multiple: true
+      - name: Write version.json
+        run: |
+          node -e '
+            const fs = require("fs"), crypto = require("crypto");
+            const files = {};
+            for (const f of fs.readdirSync("out")) files[f] = crypto.createHash("sha256").update(fs.readFileSync("out/" + f)).digest("hex");
+            const version = require("./package.json").version;
+            fs.writeFileSync("out/version.json", JSON.stringify({ version, files }, null, 2));
+            console.log(version, Object.keys(files));
+          '
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
-          name: Exacct AI
+          name: Expecct
           make_latest: true
           files: out/*
