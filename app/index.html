@@ -224,6 +224,10 @@ svg{width:18px;height:18px;flex:none}
 /* card spotlight */
 .card::after{content:"";position:absolute;inset:0;border-radius:inherit;background:radial-gradient(220px circle at var(--mx,50%) var(--my,0%),color-mix(in srgb,var(--c) 18%,transparent),transparent 65%);opacity:0;transition:opacity .3s;pointer-events:none}
 .card:hover::after{opacity:1}
+.iact{display:flex;flex-direction:column;gap:8px}
+.iact .big{display:flex;align-items:center;justify-content:center;gap:9px}
+.iact .big svg{width:17px;height:17px}
+.iact .alt{background:transparent;color:var(--fg);border:1px solid var(--line);font-weight:700}
 .ihow{display:flex;flex-direction:column;gap:10px}
 .ihow .tab{display:flex;gap:6px;flex-wrap:wrap}
 .ihow .tab button{padding:7px 12px;border-radius:999px;border:1px solid var(--line);font-weight:700;font-size:12.5px;color:var(--muted)}
@@ -390,9 +394,11 @@ html.desktop,.desktop body{background:#0d0d0f}
 </div></div>
 
 <div class="sheet" id="iosSheet" hidden><div>
-  <h2><img src="icon-192.png" alt="" style="width:34px;height:34px;border-radius:10px">Install Expecct</h2>
-  <div class="ihow"><div class="tab" id="itab"></div><ol class="steps" id="isteps"></ol></div>
-  <button class="big" id="iosDone">OK</button>
+  <h2><img src="icon-192.png" alt="" style="width:34px;height:34px;border-radius:10px"><span id="iTitle">Install Expecct</span></h2>
+  <p id="iSub"></p>
+  <div id="iAct" class="iact"></div>
+  <div class="ihow" id="iHow"><div class="tab" id="itab"></div><ol class="steps" id="isteps"></ol></div>
+  <button class="big ghost" id="iosDone">Close</button>
 </div></div>
 
 <div class="toast" id="toast"></div>
@@ -881,15 +887,50 @@ function showHow(k){
   $("isteps").innerHTML=HOW[k][1].map(function(t){ return "<li>"+t+"</li>"; }).join("");
   each("[data-how]",function(b){ b.onclick=function(){ showHow(b.dataset.how); }; });
 }
+/* Install: on a computer you get the real Expecct app (with Agent); on a phone you add the web app to the home screen */
+var REL="https://github.com/rehat2009-dev/exacct-ai/releases/download/latest/";
+var OS = /Windows/.test(ua) ? "win" : (/Macintosh|Mac OS X/.test(ua) && !isIOS && navigator.maxTouchPoints < 2) ? "mac" : "";
+var I_DL="<svg viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M8 2v8M4.5 6.5 8 10l3.5-3.5M3 13.5h10\"/></svg>";
+var STEPS_DL = {
+  win:["Open the file that downloaded (bottom or top of your browser)","If a blue box says <b>Windows protected your PC</b>: click <b>More info</b> → <b>Run anyway</b>","Expecct installs and opens by itself – done"],
+  mac:["Open the file that downloaded and drag <b>Expecct</b> to <b>Applications</b>","Open Expecct from Applications","If the Mac says it can't be opened: <b>System Settings → Privacy &amp; Security → Open Anyway</b>"]
+};
+function desktopFile(){ return REL + (OS==="win" ? "Expecct-ChatGPT-Windows.exe" : "Expecct-ChatGPT-Mac.dmg"); }
+function downloadDesktop(){
+  var a=document.createElement("a"); a.href=desktopFile(); a.download=""; document.body.appendChild(a); a.click(); a.remove();
+  $("iTitle").textContent="Downloading Expecct…";
+  $("iSub").textContent=(OS==="win"?"Windows":"Mac")+" app with Chat and Agent · about "+(OS==="win"?"120":"220")+" MB";
+  $("iAct").innerHTML="<a class=\"big alt\" href=\""+desktopFile()+"\">"+I_DL+"Download again</a>";
+  $("isteps").innerHTML=STEPS_DL[OS].map(function(t){ return "<li>"+t+"</li>"; }).join(""); $("itab").innerHTML="";
+  $("iHow").hidden=false; $("iosSheet").hidden=false;
+}
+function webInstall(){
+  if (deferred){ deferred.prompt(); deferred.userChoice.then(function(r){ if (r.outcome==="accepted"){ $("installBtn").hidden=true; $("iosSheet").hidden=true; } deferred=null; }); return true; }
+  return false;
+}
 function install(){
   if (standalone){ toast("Expecct is already installed"); return; }
-  if (deferred){ deferred.prompt(); deferred.userChoice.then(function(r){ if (r.outcome==="accepted") $("installBtn").hidden=true; deferred=null; }); return; }
-  showHow(myHow); $("iosSheet").hidden=false;
+  if (DESK) return;
+  if (OS){   // computer: offer the real app
+    $("iTitle").textContent="Install Expecct";
+    $("iSub").textContent="The app has Chat and the Agent that builds things on your computer.";
+    $("iAct").innerHTML="<button class=\"big\" id=\"iDesk\">"+I_DL+"Download for "+(OS==="win"?"Windows":"Mac")+"</button>"+(deferred?"<button class=\"big alt\" id=\"iWeb\">Or install the web version</button>":"");
+    $("iHow").hidden=true; $("iosSheet").hidden=false;
+    $("iDesk").onclick=downloadDesktop;
+    if ($("iWeb")) $("iWeb").onclick=function(){ $("iosSheet").hidden=true; webInstall(); };
+    return;
+  }
+  // phone / other: install the web app
+  $("iTitle").textContent="Install Expecct"; $("iSub").textContent="Adds Expecct to your home screen like a normal app.";
+  if (deferred){ $("iAct").innerHTML="<button class=\"big\" id=\"iWeb\">"+I_DL+"Install now</button>"; $("iHow").hidden=true; $("iosSheet").hidden=false; $("iWeb").onclick=webInstall; return; }
+  $("iAct").innerHTML=""; $("iHow").hidden=false; showHow(myHow); $("iosSheet").hidden=false;
 }
+// if the phone becomes able to install while the box is open, show the one-tap button
+window.addEventListener("beforeinstallprompt",function(){ if (!$("iosSheet").hidden && !OS) install(); });
 $("installBtn").onclick=install;
 if (/[?&]install=1/.test(location.search)){
   history.replaceState(null,"",location.pathname);
-  setTimeout(function(){ if (deferred) toast("Press Install app at the top"); else install(); },900);
+  setTimeout(install,400);
 }
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function(){});
 
