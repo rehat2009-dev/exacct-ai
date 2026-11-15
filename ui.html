@@ -74,7 +74,10 @@ svg{width:18px;height:18px;flex:none}
 .ri.on{color:var(--fg);background:rgba(255,255,255,.08)}
 .ri.on::before{content:"";position:absolute;left:-6px;top:10px;bottom:10px;width:3px;border-radius:3px;background:var(--accent)}
 .aic{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;font-style:normal;font-weight:800;font-size:11px;color:#fff;background:var(--c);opacity:.55;transition:opacity .2s,transform .2s}
+.aic.img{background:#fff;padding:5px}
+.aic.img img{width:100%;height:100%;object-fit:contain;display:block}
 .ri:hover .aic{opacity:.85}
+.ri .aic.img{opacity:.8}
 .ri.on .aic,.ri.vis .aic{opacity:1}
 .ri.on .aic{transform:scale(1.06);box-shadow:0 6px 16px color-mix(in srgb,var(--c) 45%,transparent)}
 .ri.vis:not(.on)::after{content:"";position:absolute;right:9px;top:8px;width:6px;height:6px;border-radius:50%;background:var(--fg)}
@@ -272,6 +275,10 @@ function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {"&":"&
 function set(p){ return call("set", p).then(function(s){ S = s; render(); }); }
 function iconSrc(){ return S.cfg.icon || "icon.png"; }
 function aiOf(id){ return S.ais.filter(function(a){ return a.id === id; })[0] || S.ais[0]; }
+function aicHtml(a){
+  return a.icon ? "<i class=\"aic img\" style=\"--c:" + a.color + "\"><img src=\"" + esc(a.icon) + "\" alt=\"\"></i>"
+                : "<i class=\"aic\" style=\"--c:" + a.color + "\">" + SHORT[a.id] + "</i>";
+}
 function mod(){ return S && S.isMac ? "⌘" : "Ctrl"; }
 
 /* ---------- toast ---------- */
@@ -294,13 +301,15 @@ function render(){
     S.ais.forEach(function(x, i){
       var b = document.createElement("button");
       b.className = "ri ai"; b.dataset.ai = x.id; b.title = x.label + " (" + mod() + " " + (i + 1) + ")";
-      b.innerHTML = "<i class=\"aic\" style=\"--c:" + x.color + "\">" + SHORT[x.id] + "</i><span>" + esc(x.label) + "</span>";
+      b.innerHTML = aicHtml(x) + "<span>" + esc(x.label) + "</span>";
       b.onclick = function(){ call("switch", x.id); };
       list.appendChild(b);
     });
   }
   var sg = S.signed || {};
   each(".ri.ai", list, function(b){
+    var ax = aiOf(b.dataset.ai), cur0 = b.querySelector(".aic");
+    if ((ax.icon || "") !== (b.dataset.icon || "")) { b.dataset.icon = ax.icon || ""; cur0.outerHTML = aicHtml(ax); }
     b.classList.toggle("on", b.dataset.ai === cur);
     b.classList.toggle("vis", vis.length > 1 && vis.indexOf(b.dataset.ai) > -1);
     var out = sg[b.dataset.ai] === false, dot = b.querySelector(".so");
@@ -547,7 +556,7 @@ function renderStyle(){
   var accs = S.ais.map(function(a){
     var st = sg[a.id], txt = st ? "Signed in" : st === false ? "Not signed in" : "Checking...";
     var btn = st ? "<button class=\"chip\" data-out=\"" + a.id + "\">" + (armed["out" + a.id] ? "Sure?" : "Sign out") + "</button>" : "<button class=\"chip white\" data-in=\"" + a.id + "\">Sign in</button>";
-    return "<div class=\"acc\"><i class=\"aic\" style=\"--c:" + a.color + "\">" + SHORT[a.id] + "</i><div class=\"an\">" + a.label + "<small class=\"" + (st ? "ok" : "") + "\">" + txt + "</small></div>" + btn + "</div>";
+    return "<div class=\"acc\">" + aicHtml(a) + "<div class=\"an\">" + a.label + "<small class=\"" + (st ? "ok" : "") + "\">" + txt + "</small></div>" + btn + "</div>";
   }).join("");
   var ut = !u ? "You have the newest version" : u.status === "downloading" ? "Downloading " + u.version + "... " + (u.pct || 0) + "%" : u.status === "ready" ? "Version " + u.version + " is ready" : u.status === "manual" ? "Version " + u.version + " is out" : "Updating...";
   var ub = u && u.status === "ready" ? "<button class=\"chip white\" id=\"upR\">Restart</button>" : u && u.status === "manual" ? "<button class=\"chip white\" id=\"upO\">Get it</button>" : "<button class=\"chip\" id=\"upC\">Check</button>";
@@ -607,7 +616,7 @@ function drawWelcome(){
   var back = w.step ? "<button class=\"link\" id=\"wb\">Back</button>" : "";
   var html = "";
   if (w.step === 0) html = "<img class=\"hero\" src=\"" + iconSrc() + "\" alt=\"\"><h1>Welcome to<br>" + esc(S.cfg.name) + "</h1><button class=\"big-btn\" id=\"wn\">Start</button>";
-  if (w.step === 1) html = "<h1>Pick your AI</h1><div class=\"aipick\">" + S.ais.map(function(a){ return "<button data-wai=\"" + a.id + "\" class=\"" + (w.ai === a.id ? "on" : "") + "\"><i style=\"background:" + a.color + "\"></i>" + a.label + "</button>"; }).join("") + "</div><button class=\"big-btn\" id=\"wn\">Next</button>";
+  if (w.step === 1) html = "<h1>Pick your AI</h1><div class=\"aipick\">" + S.ais.map(function(a){ return "<button data-wai=\"" + a.id + "\" class=\"" + (w.ai === a.id ? "on" : "") + "\">" + (a.icon ? "<i style=\"background:#fff;padding:7px\"><img src=\"" + esc(a.icon) + "\" alt=\"\" style=\"width:100%;height:100%;object-fit:contain;display:block\"></i>" : "<i style=\"background:" + a.color + "\"></i>") + a.label + "</button>"; }).join("") + "</div><button class=\"big-btn\" id=\"wn\">Next</button>";
   if (w.step === 2) html = "<h1>Pick a size</h1><div class=\"tiles wtiles\">" + WSIZES.map(function(k){ var r = TILES.filter(function(t){ return t[0] === k; })[0][1]; return tileHtml(k, r, w.size === k); }).join("") + "</div><button class=\"big-btn\" id=\"wn\">Next</button>";
   if (w.step === 3) {
     var on = (S.signed || {})[w.ai];

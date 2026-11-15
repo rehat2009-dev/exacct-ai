@@ -97,7 +97,7 @@ const onHost = (ai, url) => { try { const h = new URL(url).hostname; return AIS[
 function publicState() {
   return {
     cfg, isMac, hotkeyLabel: isMac ? "⌘ ⇧ Space" : "Ctrl + Shift + Space",
-    ais: AI_KEYS.map(k => ({ id: k, label: AIS[k].label, color: AIS[k].color })),
+    ais: AI_KEYS.map(k => ({ id: k, label: AIS[k].label, color: AIS[k].color, icon: (data.icons || {})[k] || null })),
     sizeNames: SIZE_NAMES, history: data.history, stats: data.stats, prompts: data.prompts,
     focused: focused || cfg.ai, cols: visibleAIs(), update: upd, signed, version: pkg.version, dark: nativeTheme.shouldUseDarkColors
   };
@@ -352,6 +352,7 @@ function getView(ai) {
   wc.on("did-navigate", nav);
   wc.on("did-navigate-in-page", nav);
   wc.on("page-title-updated", () => record(ai, wc));
+  wc.on("page-favicon-updated", (_e, favs) => { if (onHost(ai, wc.getURL()) || wc.getURL().startsWith("data:")) loadIcon(ai, favs); });
   wc.on("did-start-loading", () => { if (ai === cfg.ai) send("loading", true); });
   wc.on("did-stop-loading", () => { if (ai === cfg.ai) send("loading", false); });
   wc.on("did-finish-load", () => wc.setZoomFactor(cfg.zoom / 100));
@@ -521,6 +522,33 @@ function keepCookies() {
     ses.cookies.set(d).catch(() => {});
   });
   return ses;
+}
+
+// ---------- AI icons ----------
+// Each AI shows its own site icon, the same one a browser shows in the tab.
+// It is taken from the site itself and saved, so it shows up right away next time.
+async function loadIcon(ai, urls) {
+  data.icons = data.icons || {};
+  const list = (urls || []).filter(u => /^https?:/i.test(u));
+  // prefer png/svg over .ico
+  list.sort((a, b) => (/\.ico(\?|$)/i.test(a) ? 1 : 0) - (/\.ico(\?|$)/i.test(b) ? 1 : 0));
+  for (const u of list) {
+    try {
+      const r = await ses().fetch(u, { cache: "no-cache" });
+      const type = (r.headers.get("content-type") || "").split(";")[0].trim();
+      if (!r.ok || !/^image\//.test(type)) continue;
+      const buf = Buffer.from(await r.arrayBuffer());
+      if (!buf.length || buf.length > 300000) continue;
+      const url = "data:" + type + ";base64," + buf.toString("base64");
+      if (data.icons[ai] !== url) { data.icons[ai] = url; saveData(); send("state", publicState()); }
+      return true;
+    } catch {}
+  }
+  return false;
+}
+function loadMissingIcons() {
+  data.icons = data.icons || {};
+  for (const k of AI_KEYS) if (!data.icons[k]) loadIcon(k, [new URL(AIS[k].url).origin + "/favicon.ico"]);
 }
 
 // ---------- sign in / out ----------
@@ -821,6 +849,7 @@ else {
     buildTray();
     createWindow();
     checkAuth();
+    setTimeout(loadMissingIcons, 1500);
     setTimeout(() => checkUpdate(false), 8000);
     setInterval(() => checkUpdate(false), 4 * 60 * 60 * 1000);
     // time used: counts 15 s at a time while the window is in front
