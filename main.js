@@ -23,6 +23,7 @@ const BRAND = "Expecct";
 const CHAT_URL = process.env.EXPECCT_CHAT || SITE + "app/?desktop=1";
 const CHAT_ORIGIN = new URL(CHAT_URL).origin;
 const LOGIN_URL = process.env.EXPECCT_LOGIN || SITE + "app/login.html";
+const AGENT_URL = process.env.EXPECCT_AGENT || SITE + "app/agent.html?desktop=1";
 const SCHEME = "expecct";
 const HOTKEY = "CommandOrControl+Shift+Space";
 const FIXED = { mini: [380, 580], small: [460, 700], medium: [860, 760], large: [1200, 860], xl: [1500, 960] };
@@ -61,7 +62,7 @@ const DEFAULTS = {
   accent: "#8b5cf6", theme: "aurora", icon: null,
   hotkey: true, startup: false, closeToTray: false, resume: true, keepSignedIn: true,
   welcomed: false, mini: null, lastUrl: {},
-  split: 1, ai2: null, goal: 0, goalDay: "", autoHide: false, chatMode: true
+  split: 1, ai2: null, goal: 0, goalDay: "", autoHide: false, chatMode: true, page: "chat", workspace: "", autoRun: false
 };
 const DEFAULT_PROMPTS = [
   { id: "p1", title: "Explain simply", text: "Explain this in simple words, like I'm 12:\n\n" },
@@ -86,7 +87,7 @@ const saveData = () => later("data", () => writeJson("data.json", data));
 // ---------- state ----------
 let win, tray;
 const views = {};
-let chatView = null, loginState = null, pendingToken = null;
+let chatView = null, agentView = null, loginState = null, pendingToken = null;
 const ui = { drawer: false, welcome: false, ask: false };
 let placing = false, focused = null, dialogOpen = false, findText = "";
 let upd = null, updFile = null, updApp = null, signed = {};
@@ -103,7 +104,7 @@ function publicState() {
     cfg, isMac, hotkeyLabel: isMac ? "⌘ ⇧ Space" : "Ctrl + Shift + Space",
     ais: AI_KEYS.map(k => ({ id: k, label: AIS[k].label, color: AIS[k].color, icon: (data.icons || {})[k] || null })),
     sizeNames: SIZE_NAMES, history: data.history, stats: data.stats, prompts: data.prompts,
-    focused: focused || cfg.ai, cols: visibleAIs(), chatMode: !!cfg.chatMode, update: upd, signed, version: pkg.version, dark: nativeTheme.shouldUseDarkColors
+    focused: focused || cfg.ai, cols: visibleAIs(), chatMode: !!cfg.chatMode, page: cfg.chatMode ? (cfg.page === "agent" ? "agent" : "chat") : null, update: upd, signed, version: pkg.version, dark: nativeTheme.shouldUseDarkColors
   };
 }
 
@@ -131,7 +132,9 @@ function layout() {
   const drawerW = ui.drawer ? (w - rail - DRAWER < 320 ? w - rail : DRAWER) : 0;
   const left = rail + drawerW;
   if (cfg.chatMode) {
-    const c = getChat();
+    const c = cfg.page === "agent" ? getAgent() : getChat();
+    const other = c === chatView ? agentView : chatView;
+    if (other) other.setVisible(false);
     for (const k of AI_KEYS) if (views[k]) views[k].setVisible(false);
     const show = !ui.welcome && w - left > 0;
     c.setVisible(show);
@@ -140,6 +143,7 @@ function layout() {
     return;
   }
   if (chatView) chatView.setVisible(false);
+  if (agentView) agentView.setVisible(false);
   const list = visibleAIs();
   list.forEach(k => getView(k));
   const head = TOP + (ui.ask ? ASKH : 0) + (ui.notice ? NOTICEH : 0);
@@ -212,6 +216,7 @@ function setZoom(z) {
   cfg.zoom = clamp(Math.round(z), 50, 200);
   for (const k of AI_KEYS) if (views[k]) views[k].webContents.setZoomFactor(cfg.zoom / 100);
   if (chatView) chatView.webContents.setZoomFactor(cfg.zoom / 100);
+  if (agentView) agentView.webContents.setZoomFactor(cfg.zoom / 100);
   saveCfg(); send("state", publicState()); toast("Text size " + cfg.zoom + "%");
 }
 
@@ -273,6 +278,7 @@ function applyTheme() {
   if (win && !win.isDestroyed()) win.setBackgroundColor(bg);
   for (const k of AI_KEYS) if (views[k]) views[k].setBackgroundColor(bg);
   if (chatView) chatView.setBackgroundColor(bg);
+  if (agentView) agentView.setBackgroundColor(bg);
   if (win && !win.isDestroyed() && lastDark !== nativeTheme.shouldUseDarkColors) { lastDark = nativeTheme.shouldUseDarkColors; send("state", publicState()); }
 }
 let lastDark = null;
@@ -389,8 +395,9 @@ function getView(ai) {
 }
 
 // ---------- chat (answers right inside Expecct) ----------
-function getChat() {
-  if (chatView) return chatView;
+function getChat() { if (!chatView) chatView = makePage(CHAT_URL); return chatView; }
+function getAgent() { if (!agentView) agentView = makePage(AGENT_URL); return agentView; }
+function makePage(PAGE_URL) {
   const v = new WebContentsView({ webPreferences: { partition: "persist:exacct", contextIsolation: true, sandbox: true, preload: path.join(__dirname, "chatpreload.js"), backgroundThrottling: false } });
   v.setBackgroundColor("#09090b");
   v.setVisible(false);
@@ -407,16 +414,15 @@ function getChat() {
   wc.on("before-input-event", onKeys);
   wc.on("context-menu", (_e, p) => contextMenu(wc, p));
   wc.on("did-finish-load", () => { wc.setZoomFactor(cfg.zoom / 100); if (pendingToken) deliverToken(); });
-  wc.on("did-fail-load", (_e, code, _d, url, main) => { if (main && code !== -3) setTimeout(() => { if (!wc.isDestroyed()) wc.loadURL(CHAT_URL).catch(() => {}); }, 4000); });
-  wc.loadURL(CHAT_URL).catch(() => {});
-  chatView = v;
+  wc.on("did-fail-load", (_e, code, _d, url, main) => { if (main && code !== -3) setTimeout(() => { if (!wc.isDestroyed()) wc.loadURL(PAGE_URL).catch(() => {}); }, 4000); });
+  wc.loadURL(PAGE_URL).catch(() => {});
   return v;
 }
-function openChat() {
-  cfg.chatMode = true; saveCfg();
+function openChat(page) {
+  cfg.chatMode = true; cfg.page = page === "agent" ? "agent" : "chat"; saveCfg();
   ui.notice = false;
   layout(); send("state", publicState());
-  const c = getChat(); if (!ui.drawer) c.webContents.focus();
+  const c = cfg.page === "agent" ? getAgent() : getChat(); if (!ui.drawer) c.webContents.focus();
   if (tray) buildTray();
 }
 function registerScheme() {
@@ -444,12 +450,13 @@ function handleLink(url) {
   loginState = null; writeJson("login.json", {});
   pendingToken = token;
   if (!win) return;
-  showWin(); openChat();
+  showWin(); openChat(cfg.page);
   deliverToken();
 }
 function deliverToken() {
-  if (!pendingToken || !chatView || chatView.webContents.isLoading()) return;
-  chatView.webContents.send("puter-token", pendingToken);
+  const pages = [chatView, agentView].filter(Boolean);
+  if (!pendingToken || !pages.length || pages.some(v => v.webContents.isLoading())) return;
+  for (const v of pages) v.webContents.send("puter-token", pendingToken);
   pendingToken = null;
   toast("You're logged in");
 }
@@ -461,14 +468,168 @@ const CH = {
   version: () => pkg.version
 };
 ipcMain.handle("xc", (e, ch, ...a) => {
-  if (!chatView || e.sender !== chatView.webContents || !CH[ch]) return null;
+  const fromChat = chatView && e.sender === chatView.webContents, fromAgent = agentView && e.sender === agentView.webContents;
+  if (!fromChat && !fromAgent) return null;
   try { if (new URL(e.senderFrame.url).origin !== CHAT_ORIGIN) return null; } catch { return null; }
-  return CH[ch](...a);
+  if (CH[ch]) return CH[ch](...a);
+  if (fromAgent && AG[ch]) return AG[ch](...a);   // file and command tools: only for the Agent page
+  return null;
 });
+
+// ---------- agent (like Codex): looks around, writes files and runs commands ----------
+const SKIP_DIRS = new Set(["node_modules", ".git", "__pycache__", ".venv", "venv", "dist", "build", ".next", "Library"]);
+let agentProc = null, agentBackups = [], sessionAllow = false;
+const ws = () => cfg.workspace && fs.existsSync(cfg.workspace) ? cfg.workspace : "";
+function where(p, mustBeInside) {
+  const base = ws() || app.getPath("home");
+  const abs = path.resolve(base, String(p || ".").replace(/^~(?=$|[\\/])/, app.getPath("home")));
+  if (mustBeInside) {
+    if (!ws()) throw new Error("No project folder chosen. Ask the user to press 'Choose a project folder'.");
+    const rel = path.relative(ws(), abs);
+    if (rel.startsWith("..") || path.isAbsolute(rel)) throw new Error("You can only change files inside the project folder: " + ws());
+  }
+  return abs;
+}
+const isText = buf => !buf.subarray(0, 4000).includes(0);
+const cut = (t, n) => (t.length > n ? t.slice(0, n) + "\n… (" + (t.length - n) + " more characters cut)" : t);
+function backup(file) {
+  let prev = null; try { prev = fs.readFileSync(file); } catch {}
+  agentBackups.push({ file, prev });
+}
+async function askToRun(what, detail) {
+  if (cfg.autoRun || sessionAllow) return true;
+  if (win) showWin();
+  const r = await dialog.showMessageBox(win, { type: "question", title: "Expecct Agent", message: what, detail,
+    buttons: ["Allow", "Allow all this session", "Always allow (Auto-run)", "Don't allow"], defaultId: 0, cancelId: 3, noLink: true });
+  if (r.response === 1) sessionAllow = true;
+  if (r.response === 2) { cfg.autoRun = true; saveCfg(); }
+  return r.response < 3;
+}
+function runCommand(command, timeoutS) {
+  const cwd = ws() || app.getPath("home");
+  const ms = clamp(Number(timeoutS) || 120, 5, 900) * 1000;
+  return new Promise(res => {
+    let out = "", done = false;
+    const sh = isMac ? (process.env.SHELL || "/bin/zsh") : true;
+    const p = spawn(command, { cwd, shell: sh, windowsHide: true, env: { ...process.env, PYTHONIOENCODING: "utf-8" } });
+    agentProc = p;
+    const add = d => { out += d.toString(); if (out.length > 400000) out = out.slice(-200000); };
+    p.stdout.on("data", add); p.stderr.on("data", add);
+    const finish = (code, note) => {
+      if (done) return; done = true; clearTimeout(timer); if (agentProc === p) agentProc = null;
+      const tailOut = out.length > 14000 ? "… (start cut)\n" + out.slice(-14000) : out;
+      res({ ok: code === 0, text: (note ? note + "\n" : "") + "exit code " + code + "\n" + (tailOut.trim() || "(no output)") });
+    };
+    const timer = setTimeout(() => { killProc(p); finish(-1, "Stopped after " + ms / 1000 + " s (timeout)."); }, ms);
+    p.on("error", e => finish(-1, "Could not start: " + e.message));
+    p.on("close", code => finish(code == null ? -1 : code));
+  });
+}
+function killProc(p) {
+  if (!p || p.exitCode != null) return;
+  try { if (process.platform === "win32") spawn("taskkill", ["/pid", String(p.pid), "/T", "/F"], { windowsHide: true }); else p.kill("SIGTERM"); } catch {}
+}
+function walkSearch(dir, re, out, depth) {
+  if (out.length >= 200 || depth > 12) return;
+  let items = []; try { items = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
+  for (const it of items) {
+    if (out.length >= 200) return;
+    const f = path.join(dir, it.name);
+    if (it.isDirectory()) { if (!SKIP_DIRS.has(it.name) && !it.name.startsWith(".")) walkSearch(f, re, out, depth + 1); continue; }
+    try {
+      const st = fs.statSync(f); if (st.size > 1500000) continue;
+      const buf = fs.readFileSync(f); if (!isText(buf)) continue;
+      buf.toString("utf8").split(/\r?\n/).forEach((line, i) => { if (out.length < 200 && re.test(line)) out.push(path.relative(ws() || dir, f) + ":" + (i + 1) + ": " + line.trim().slice(0, 200)); });
+    } catch {}
+  }
+}
+const TOOLS = {
+  list_dir: a => {
+    const d = where(a.path);
+    const items = fs.readdirSync(d, { withFileTypes: true }).slice(0, 400).map(it => {
+      if (it.isDirectory()) return it.name + "/";
+      let size = ""; try { size = " (" + fs.statSync(path.join(d, it.name)).size + " B)"; } catch {}
+      return it.name + size;
+    });
+    return d + "\n" + (items.join("\n") || "(empty)");
+  },
+  read_file: a => {
+    const f = where(a.path), buf = fs.readFileSync(f);
+    if (!isText(buf)) return f + " is a binary file (" + buf.length + " bytes).";
+    return cut(buf.toString("utf8"), 80000);
+  },
+  search_files: a => {
+    let re; try { re = new RegExp(String(a.pattern || ""), "i"); } catch { re = new RegExp(String(a.pattern || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"); }
+    const out = []; walkSearch(where(a.path || "."), re, out, 0);
+    return out.length ? out.join("\n") + (out.length >= 200 ? "\n(first 200 matches)" : "") : "No matches.";
+  },
+  write_file: a => {
+    const f = where(a.path, true);
+    fs.mkdirSync(path.dirname(f), { recursive: true });
+    backup(f); fs.writeFileSync(f, String(a.content == null ? "" : a.content));
+    return "Saved " + path.relative(ws(), f) + " (" + Buffer.byteLength(String(a.content || "")) + " bytes)";
+  },
+  edit_file: a => {
+    const f = where(a.path, true), old = String(a.old_text || ""), txt = fs.readFileSync(f, "utf8");
+    if (!old) throw new Error("old_text is empty");
+    const n = txt.split(old).length - 1;
+    if (n !== 1) throw new Error(n ? "old_text appears " + n + " times – give more surrounding text" : "old_text was not found in the file");
+    backup(f); fs.writeFileSync(f, txt.replace(old, () => String(a.new_text == null ? "" : a.new_text)));
+    return "Edited " + path.relative(ws(), f);
+  },
+  run_command: async a => {
+    const cmd = String(a.command || "").trim(); if (!cmd) throw new Error("Empty command");
+    if (!(await askToRun("Run this command?", cmd + "\n\nin " + (ws() || app.getPath("home"))))) return { ok: false, text: "The user said no to running this command." };
+    return runCommand(cmd, a.timeout_seconds);
+  },
+  open_path: async a => {
+    const f = where(a.path);
+    if (!fs.existsSync(f)) throw new Error("Not found: " + f);
+    if (/\.(exe|bat|cmd|ps1|sh|command|app|msi|vbs|jar)$/i.test(f) && !(await askToRun("Open this program?", f))) return { ok: false, text: "The user said no." };
+    const err = await shell.openPath(f);
+    if (err) throw new Error(err);
+    return "Opened " + f;
+  }
+};
+const AG = {
+  agentInfo: () => ({ platform: process.platform === "win32" ? "Windows" : isMac ? "macOS" : "Linux", home: app.getPath("home"), workspace: ws(), autoRun: !!cfg.autoRun }),
+  pickFolder: async () => {
+    dialogOpen = true;
+    const r = await dialog.showOpenDialog(win, { title: "Choose a project folder", properties: ["openDirectory", "createDirectory"], defaultPath: ws() || app.getPath("documents") });
+    dialogOpen = false;
+    if (r.canceled || !r.filePaths[0]) return null;
+    cfg.workspace = r.filePaths[0]; agentBackups = []; saveCfg();
+    return cfg.workspace;
+  },
+  tool: async (name, args) => {
+    if (!TOOLS[name]) return { ok: false, text: "Unknown tool " + name };
+    try {
+      const r = await TOOLS[name](args && typeof args === "object" ? args : {});
+      return typeof r === "string" ? { ok: true, text: r } : r;
+    } catch (e) { return { ok: false, text: String(e && e.message || e) }; }
+  },
+  agentStop: () => { killProc(agentProc); return true; },
+  agentUndo: () => {
+    let n = 0;
+    while (agentBackups.length) {
+      const b = agentBackups.pop();
+      try { if (b.prev == null) fs.rmSync(b.file, { force: true }); else fs.writeFileSync(b.file, b.prev); n++; } catch {}
+    }
+    return n;
+  },
+  // the page can only turn Auto-run OFF; turning it on needs the app's own window
+  setAutoRun: async on => {
+    if (!on) { cfg.autoRun = false; sessionAllow = false; saveCfg(); return false; }
+    if (cfg.autoRun) return true;
+    const r = await dialog.showMessageBox(win, { type: "warning", title: "Expecct Agent", message: "Let the agent run commands without asking?", detail: "It can then run any command on this computer by itself. You can turn it off again any time.", buttons: ["Turn on", "Cancel"], defaultId: 1, cancelId: 1, noLink: true });
+    if (r.response === 0) { cfg.autoRun = true; saveCfg(); }
+    return !!cfg.autoRun;
+  }
+};
 
 function switchAI(ai) {
   if (!AIS[ai]) return;
-  if (cfg.chatMode) { cfg.chatMode = false; if (chatView) chatView.setVisible(false); }
+  if (cfg.chatMode) { cfg.chatMode = false; if (chatView) chatView.setVisible(false); if (agentView) agentView.setVisible(false); }
   if (cfg.split < 3) {
     if (cfg.split === 2 && visibleAIs()[1] === ai) cfg.ai2 = cfg.ai;
     cfg.ai = ai;
@@ -484,7 +645,7 @@ function switchAI(ai) {
 }
 
 function current() {
-  if (cfg.chatMode && chatView) return chatView.webContents;
+  if (cfg.chatMode) { const pv = cfg.page === "agent" ? agentView : chatView; if (pv) return pv.webContents; }
   const k = visibleAIs().includes(focused) ? focused : cfg.ai;
   return views[k] && views[k].webContents;
 }
@@ -820,12 +981,13 @@ const H = {
   askOne: (ai, text) => askOne(ai, String(text || "").trim()),
   openAppWindow: ai => { if (!AIS[ai]) return; ui.notice = false; layout(); const r = openAppWindow(ai); toast("Opening " + AIS[ai].label + " in its own window"); return r; },
   closeNotice: () => { ui.notice = false; layout(); },
-  chat: () => openChat(),
+  chat: page => openChat(page),
   act: a => {
     const wc = current();
-    if (cfg.chatMode && chatView && (a === "home" || a === "reload" || a === "back")) {
-      if (a === "home") chatView.webContents.executeJavaScript("var b=document.getElementById('newBtn'); if (b) b.click();", true).catch(() => {});
-      if (a === "reload") chatView.webContents.reload();
+    if (cfg.chatMode && current() && (a === "home" || a === "reload" || a === "back")) {
+      const pv = current();
+      if (a === "home") pv.executeJavaScript("var b=document.getElementById('newBtn')||document.getElementById('newTask'); if (b) b.click();", true).catch(() => {});
+      if (a === "reload") pv.reload();
       return;
     }
     if (a === "back" && wc && wc.navigationHistory.canGoBack()) wc.navigationHistory.goBack();
@@ -945,7 +1107,8 @@ function buildTray() {
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: "Show / hide " + cfg.name, click: toggleWindow },
     { type: "separator" },
-    { label: "Chat", type: "radio", checked: !!cfg.chatMode, click: () => { showWin(); openChat(); } },
+    { label: "Chat", type: "radio", checked: !!cfg.chatMode && cfg.page !== "agent", click: () => { showWin(); openChat("chat"); } },
+    { label: "Agent", type: "radio", checked: !!cfg.chatMode && cfg.page === "agent", click: () => { showWin(); openChat("agent"); } },
     ...AI_KEYS.map(k => ({ label: AIS[k].label, type: "radio", checked: !cfg.chatMode && cfg.ai === k, click: () => { showWin(); switchAI(k); } })),
     { type: "separator" },
     { label: "Size", submenu: sizes.map(s => ({ label: SIZE_NAMES[s], type: "radio", checked: cfg.size === s, click: () => H.set({ size: s }) })) },
@@ -969,7 +1132,7 @@ function createWindow() {
   });
   win.loadFile(path.join(__dirname, "ui.html"));
   win.webContents.on("before-input-event", onKeys);
-  if (cfg.chatMode) getChat(); else getView(cfg.ai);
+  if (cfg.chatMode) { if (cfg.page === "agent") getAgent(); else getChat(); } else getView(cfg.ai);
   win.on("resize", layout);
   const remember = () => {
     if (placing || !win || win.isFullScreen() || win.isMaximized()) return;
