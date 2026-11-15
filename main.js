@@ -11,7 +11,8 @@ const AIS = {
   gemini:  { label: "Gemini",  color: "#4f8cff", url: "https://gemini.google.com/app", hosts: ["gemini.google.com"], chat: /^\/app\/\w+/ }
 };
 const AI_KEYS = Object.keys(AIS);
-const TOP = 52, DRAWER = 372, COLH = 30, ASKH = 54;
+const TOP = 44, DRAWER = 340, COLH = 30, ASKH = 54;
+const railW = w => (w < 520 ? 52 : 68);
 const SITE = "https://rehat2009-dev.github.io/exacct-ai/";
 const HOTKEY = "CommandOrControl+Shift+Space";
 const isMac = process.platform === "darwin";
@@ -90,12 +91,14 @@ function visibleAIs() {
 function layout() {
   if (!win || win.isDestroyed()) return;
   const [w, h] = win.getContentSize();
-  const drawerW = ui.drawer ? (w < 760 ? w : DRAWER) : 0;
+  const rail = railW(w);
+  const drawerW = ui.drawer ? (w - rail - DRAWER < 320 ? w - rail : DRAWER) : 0;
+  const left = rail + drawerW;
   const list = visibleAIs();
   list.forEach(k => getView(k));
   const head = TOP + (ui.ask ? ASKH : 0);
   const top = head + (list.length > 1 ? COLH : 0);
-  const avail = Math.max(0, w - drawerW), n = list.length;
+  const avail = Math.max(0, w - left), n = list.length;
   const colW = Math.floor((avail - (n - 1)) / n);
   const cols = [];
   for (const k of AI_KEYS) {
@@ -105,13 +108,13 @@ function layout() {
     const show = !ui.welcome && i > -1 && avail > 0;
     v.setVisible(show);
     if (show) {
-      const x = i * (colW + 1), width = i === n - 1 ? avail - x : colW;
+      const x = left + i * (colW + 1), width = i === n - 1 ? left + avail - x : colW;
       v.setBounds({ x, y: top, width, height: Math.max(0, h - top) });
       cols.push({ ai: k, x, width });
     }
   }
   cols.sort((a, b) => a.x - b.x);
-  send("cols", { cols, top: head, focused: focused || cfg.ai });
+  send("cols", { cols, top: head, left, focused: focused || cfg.ai });
 }
 
 function presetBounds(size, wa) {
@@ -355,9 +358,12 @@ function insertPrompt(text) {
 function onKeys(e, input) {
   if (input.type !== "keyDown") return;
   const mod = isMac ? input.meta : input.control;
-  if (!mod) return;
   const k = String(input.key).toLowerCase();
   const stop = () => e.preventDefault();
+  if (!mod && input.alt && k === "arrowleft") { stop(); H.act("back"); return; }
+  if (!mod) return;
+  if (!input.shift && !input.alt && k === "r") { stop(); H.act("reload"); return; }
+  if (!input.shift && !input.alt && k === "n") { stop(); H.act("home"); toast("New chat"); return; }
   if (input.alt) {
     const snap = { arrowleft: "left", arrowright: "right", arrowup: "full" }[k];
     if (snap) { stop(); H.set({ size: snap }); }
