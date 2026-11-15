@@ -110,7 +110,7 @@ nav{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .feat svg{width:20px;height:20px;flex:none;color:var(--accent)}
 
 /* download */
-.dlgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.dlgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
 .dcard{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:16px;transition:border-color .2s,transform .2s}
 .dcard:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--c) 60%,transparent)}
 .dtop{display:flex;align-items:center;gap:12px}
@@ -295,12 +295,17 @@ $("dlgrid").innerHTML = AIS.map(function(a){
   var m = "<a class=\"dl" + (isMac ? " main" : "") + "\" href=\"" + REL + "Exacct-AI-" + a[0] + "-Mac.dmg\"" + tgt + ">" + MAC + "Mac</a>";
   return "<div class=\"dcard\" style=\"--c:" + a[1] + "\"><div class=\"dtop\"><img src=\"icon.png\" alt=\"\"><div><b>Exacct AI</b><small><i></i>" + a[0] + "</small></div></div><div class=\"dls\">" + (isMac ? m + w : w + m) + "</div></div>";
 }).join("");
+var isPhone = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (matchMedia("(pointer: coarse)").matches && innerWidth < 820);
+var PHONE = "<svg viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" aria-hidden=\"true\"><rect x=\"4\" y=\"1.5\" width=\"8\" height=\"13\" rx=\"2\"/><path d=\"M7 12h2\"/></svg>";
+var phoneCard = "<div class=\"dcard\" style=\"--c:#8b5cf6\"><div class=\"dtop\"><img src=\"" + document.querySelector(".logo img").getAttribute("src") + "\" alt=\"\"><div><b>Exacct AI</b><small><i></i>Phone</small></div></div><div class=\"dls\"><a class=\"dl main\" href=\"phone/\">" + PHONE + "Open phone app</a></div></div>";
+$("dlgrid").insertAdjacentHTML(isPhone ? "afterbegin" : "beforeend", phoneCard);
+if (isPhone) { var nb = document.querySelector("nav .pill"); nb.firstChild.textContent = "Get the app "; nb.setAttribute("href", "phone/"); Array.prototype.forEach.call(document.querySelectorAll(".dl.main"), function(x){ if (x.getAttribute("href") !== "phone/") x.classList.remove("main"); }); }
 var STEPS = {
   win: ["Open the file", "<b>More info</b> → <b>Run anyway</b>", "Done – it opens by itself"],
   mac: ["Open the file", "Drag it to <b>Applications</b>", "Right-click → <b>Open</b>"]
 };
 document.addEventListener("click", function(e){
-  var a = e.target.closest("a.dl"); if (!a) return;
+  var a = e.target.closest("a.dl"); if (!a || a.getAttribute("href") === "phone/") return;
   $("dlsteps").innerHTML = STEPS[/\.dmg$/.test(a.href) ? "mac" : "win"].map(function(t){ return "<li><span>" + t + "</span></li>"; }).join("");
   $("dlagain").href = a.href; if (TARGET) { $("dlagain").target = "_blank"; $("dlagain").rel = "noopener"; }
   $("dlhelp").hidden = false;
