@@ -46,7 +46,7 @@ svg{width:18px;height:18px;flex:none}
 .ri:hover{background:rgba(255,255,255,.07);transform:translateY(-2px)}
 .ri:active{transform:scale(.92)}
 .ri .st{position:absolute;right:6px;bottom:6px;width:10px;height:10px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 2.5px #101015}
-.ri .st.wait{background:var(--wait)}
+.ri.wait .ic{opacity:.45;filter:grayscale(1)}
 .ri .tip{position:absolute;left:58px;white-space:nowrap;background:#1c1c24;border:1px solid var(--line);padding:6px 10px;border-radius:9px;font-size:12px;font-weight:600;opacity:0;pointer-events:none;transform:translateX(-6px);transition:all .18s}
 .ri:hover .tip{opacity:1;transform:none}
 .grow{flex:1}
@@ -183,6 +183,32 @@ svg{width:18px;height:18px;flex:none}
 .steps{margin:0;padding-left:20px;color:#d4d4d8;display:flex;flex-direction:column;gap:8px;font-size:14px}
 .steps b{color:#fff}
 
+/* sign in once */
+.signin{position:relative;background:linear-gradient(130deg,color-mix(in srgb,var(--accent) 22%,var(--card)),var(--card));border:1px solid var(--line);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:12px;overflow:hidden;
+  -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
+.signin::after{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.07),transparent);animation:sweep 4.5s ease-in-out infinite;pointer-events:none}
+@keyframes sweep{60%,100%{left:130%}}
+.signin .h{display:flex;align-items:center;gap:10px}
+.signin .h b{flex:1;font-size:15px}
+.signin .h button{color:var(--muted);font-weight:700;font-size:12.5px;padding:4px 8px;border-radius:8px}
+.signin .h button:hover{color:var(--fg);background:rgba(255,255,255,.06)}
+.signin p{margin:-6px 0 0;color:var(--muted);font-size:13px}
+.sgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sb{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:14px;background:var(--card2);border:1px solid var(--line);font-weight:700;font-size:13px;text-align:left;transition:transform .2s,border-color .2s}
+.sb:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--c) 55%,transparent)}
+.sb .ic{width:28px;height:28px;border-radius:9px;font-size:11px}
+.sb .ic img{padding:5px}
+.sb .sl{flex:1;min-width:0}
+.sb svg{width:16px;height:16px;color:var(--ok);opacity:0;transform:scale(.4);transition:all .35s cubic-bezier(.3,1.6,.5,1)}
+.sb.done svg{opacity:1;transform:none}
+@media(max-width:520px){.sgrid{grid-template-columns:1fr}}
+/* card spotlight */
+.card::after{content:"";position:absolute;inset:0;border-radius:inherit;background:radial-gradient(220px circle at var(--mx,50%) var(--my,0%),color-mix(in srgb,var(--c) 18%,transparent),transparent 65%);opacity:0;transition:opacity .3s;pointer-events:none}
+.card:hover::after{opacity:1}
+.ihow{display:flex;flex-direction:column;gap:10px}
+.ihow .tab{display:flex;gap:6px;flex-wrap:wrap}
+.ihow .tab button{padding:7px 12px;border-radius:999px;border:1px solid var(--line);font-weight:700;font-size:12.5px;color:var(--muted)}
+.ihow .tab button.on{background:#fff;color:#0a0a0d;border-color:#fff}
 @media(max-width:759px){
   .rail{display:none}
   .bar .logo{display:block}
@@ -209,12 +235,11 @@ svg{width:18px;height:18px;flex:none}
     <div class="bar anim" style="--i:0">
       <img class="logo" src="icon-192.png" alt="">
       <span class="nm" id="name">Expecct</span>
-      <button class="pill" id="installBtn" hidden><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M3 13.5h10"/></svg><span id="installT">Install</span></button>
+      <button class="pill" id="installBtn"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M3 13.5h10"/></svg><span id="installT">Install</span></button>
       <button class="round" id="styleBtn" aria-label="Style"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5l1.6 3.9 4 .3-3.1 2.6 1 4L8 10.1 4.5 12.3l1-4L2.4 5.7l4-.3z"/></svg></button>
     </div>
 
     <h1 class="hello" id="hello">Hi there</h1>
-    <div class="sub anim" style="--i:1">Ask once. If one AI is out, the next one takes over.</div>
 
     <div class="composer anim" style="--i:2">
       <textarea id="q" placeholder="Ask anything…" rows="2" autofocus></textarea>
@@ -224,6 +249,12 @@ svg{width:18px;height:18px;flex:none}
       </div>
     </div>
     <div class="route anim" style="--i:3" id="route"></div>
+
+    <div class="signin anim" style="--i:4" id="signin" hidden>
+      <div class="h"><b>Sign in once</b><button id="signinHide">Done</button></div>
+      <p>Opens in your browser, so Google, Apple and email all work. You stay signed in.</p>
+      <div class="sgrid" id="sgrid"></div>
+    </div>
 
     <div class="lbl anim" style="--i:4">Your AIs</div>
     <div class="cards anim" style="--i:5" id="cards"></div>
@@ -262,8 +293,8 @@ svg{width:18px;height:18px;flex:none}
 </div></div>
 
 <div class="sheet" id="iosSheet" hidden><div>
-  <h2>Add to home screen</h2>
-  <ol class="steps"><li>Tap <b>Share</b> at the bottom of Safari</li><li>Tap <b>Add to Home Screen</b></li><li>Tap <b>Add</b></li></ol>
+  <h2><img src="icon-192.png" alt="" style="width:34px;height:34px;border-radius:10px">Install Expecct</h2>
+  <div class="ihow"><div class="tab" id="itab"></div><ol class="steps" id="isteps"></ol></div>
   <button class="big" id="iosDone">OK</button>
 </div></div>
 
@@ -271,9 +302,9 @@ svg{width:18px;height:18px;flex:none}
 
 <script>
 var AIS = [
-  { id:"chatgpt", label:"ChatGPT", short:"Gp", color:"#10a37f", icon:"https://chatgpt.com/favicon.ico", open:"https://chatgpt.com/", ask:function(t){ return "https://chatgpt.com/?q=" + encodeURIComponent(t); } },
-  { id:"claude",  label:"Claude",  short:"Cl", color:"#d97757", icon:"https://claude.ai/favicon.ico", open:"https://claude.ai/new", ask:function(t){ return "https://claude.ai/new?q=" + encodeURIComponent(t); } },
-  { id:"gemini",  label:"Gemini",  short:"Ge", color:"#4f8cff", icon:"https://gemini.google.com/favicon.ico", open:"https://gemini.google.com/app", ask:null }
+  { id:"chatgpt", label:"ChatGPT", short:"Gp", color:"#10a37f", icon:"chatgpt.com", open:"https://chatgpt.com/", ask:function(t){ return "https://chatgpt.com/?q=" + encodeURIComponent(t); } },
+  { id:"claude",  label:"Claude",  short:"Cl", color:"#d97757", icon:"claude.ai", open:"https://claude.ai/new", ask:function(t){ return "https://claude.ai/new?q=" + encodeURIComponent(t); } },
+  { id:"gemini",  label:"Gemini",  short:"Ge", color:"#4f8cff", icon:"gemini.google.com", open:"https://gemini.google.com/app", ask:null }
 ];
 var ACCENTS = ["#8b5cf6","#ec4899","#10a37f","#d97757","#4f8cff","#06b6d4","#f59e0b","#ef4444","#22c55e","#e4e4e7"];
 var PROMPTS = [["Explain simply","Explain this in simple words, like I'm 12:\n\n"],["Fix my text","Fix the spelling and grammar in this text:\n\n"],["Summarize","Summarize this in 5 short bullet points:\n\n"],["Translate","Translate this to Norwegian:\n\n"],["Ideas","Give me 10 creative ideas for:\n\n"],["Write code","Write clean code that does this:\n\n"]];
@@ -299,7 +330,21 @@ var tt;
 function toast(t){ var el=$("toast"); el.textContent=t; el.classList.add("show"); clearTimeout(tt); tt=setTimeout(function(){ el.classList.remove("show"); },2800); }
 function applyStyle(){ document.documentElement.style.setProperty("--accent",cfg.accent); $("name").textContent=cfg.name; document.title=cfg.name; }
 function greet(){ var h=new Date().getHours(); $("hello").textContent = h<5?"Up late?":h<12?"Good morning":h<18?"Good afternoon":"Good evening"; }
-function icHtml(a){ return "<span class=\"ic\" style=\"--c:"+a.color+"\">"+a.short+"<img src=\""+a.icon+"\" alt=\"\" referrerpolicy=\"no-referrer\" onload=\"this.classList.add('on')\" onerror=\"this.remove()\"></span>"; }
+function icSrc(d){ return ["https://www.google.com/s2/favicons?domain="+d+"&sz=128","https://icons.duckduckgo.com/ip3/"+d+".ico","https://"+d+"/favicon.ico"]; }
+function icNext(img){ var l=icSrc(img.dataset.d), n=+img.dataset.n+1; if (n<l.length){ img.dataset.n=n; img.src=l[n]; } else img.remove(); }
+function icHtml(a){ return "<span class=\"ic\" style=\"--c:"+a.color+"\">"+a.label.charAt(0)+"<img src=\""+icSrc(a.icon)[0]+"\" data-d=\""+a.icon+"\" data-n=\"0\" alt=\"\" referrerpolicy=\"no-referrer\" onload=\"if(this.naturalWidth>16)this.classList.add('on');else icNext(this)\" onerror=\"icNext(this)\"></span>"; }
+
+/* ===== sign in once ===== */
+var LOGIN = { chatgpt:"https://chatgpt.com/auth/login", claude:"https://claude.ai/login", gemini:"https://accounts.google.com/ServiceLogin?continue=https%3A%2F%2Fgemini.google.com%2Fapp" };
+var signed = load("signed",{});
+function drawSignin(){
+  if (load("signinHidden",false)){ $("signin").hidden=true; return; }
+  $("signin").hidden=false;
+  $("sgrid").innerHTML=AIS.map(function(a){ return "<button class=\"sb"+(signed[a.id]?" done":"")+"\" data-sin=\""+a.id+"\" style=\"--c:"+a.color+"\">"+icHtml(a)+"<span class=\"sl\">"+a.label+"</span><svg viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m3.5 8.5 3 3 6-7\"/></svg></button>"; }).join("");
+  each("[data-sin]",function(b){ b.onclick=function(){ var a=aiOf(b.dataset.sin); if (openAI(a,LOGIN[a.id])){ signed[a.id]=1; save("signed",signed); b.classList.add("done");
+    if (AIS.every(function(x){ return signed[x.id]; })) setTimeout(function(){ toast("All set – you're signed in"); },600); } }; });
+}
+$("signinHide").onclick=function(){ save("signinHidden",true); var el=$("signin"); el.style.transition="opacity .35s,transform .35s"; el.style.opacity=0; el.style.transform="translateY(-8px)"; setTimeout(function(){ el.hidden=true; },350); };
 
 /* ===== limits ===== */
 function isOut(id){ var l=limits[id]; return !!(l && l.until>Date.now()); }
@@ -380,10 +425,15 @@ function lastQuestion(){ return $("q").value.trim() || (recent[0] && recent[0].t
 /* where a question goes right now */
 function target(){
   if (cfg.pick==="all") return ready();
-  if (cfg.pick!=="auto"){ var a=aiOf(cfg.pick); return isOut(a.id) ? [] : [a]; }
+  if (cfg.pick!=="auto") return [aiOf(cfg.pick)];
   var r=ready(); return r.length ? [r[0]] : [];
 }
+function choose(id){ // you picked this AI yourself: use it, even if it was paused
+  if (isOut(id)) delete limits[id], save("limits",limits);
+  cfg.pick=id; save("cfg",cfg); drawAll();
+}
 function send(){
+  if (cfg.pick!=="auto" && cfg.pick!=="all" && isOut(cfg.pick)) choose(cfg.pick);
   var t=$("q").value.trim(), list=target();
   if (!list.length){
     var fb=firstBack();
@@ -408,9 +458,9 @@ function drawPicker(){
   if (!isPhone) opts.push(["all","All 3",null]);
   $("picker").innerHTML=opts.map(function(o){
     var off=o[2] && isOut(o[0]);
-    return "<button class=\"pk"+(cfg.pick===o[0]?" on":"")+(off?" off":"")+"\" data-pk=\""+o[0]+"\">"+(o[2]?"<i style=\"background:"+o[2]+"\"></i>":"")+o[1]+"</button>";
+    return "<button class=\"pk"+(cfg.pick===o[0]?" on":"")+(off?" off":"")+"\" data-pk=\""+o[0]+"\">"+o[1]+"</button>";
   }).join("");
-  each("[data-pk]",function(b){ b.onclick=function(){ cfg.pick=b.dataset.pk; save("cfg",cfg); drawPicker(); drawRoute(); $("q").focus(); }; });
+  each("[data-pk]",function(b){ b.onclick=function(){ var id=b.dataset.pk; if (aiOf(id)) choose(id); else { cfg.pick=id; save("cfg",cfg); drawAll(); } $("q").focus(); }; });
 }
 function drawRoute(){
   var list=target(), el=$("route");
@@ -428,9 +478,10 @@ function drawCards(){
       ? (n ? "<button class=\"cb go\" data-cont=\""+a.id+"\" title=\"Send your last question to "+n.label+"\">"+n.label+" →</button>" : "") + "<button class=\"cb\" data-clear=\""+a.id+"\">Ready</button>"
       : "<button class=\"cb main\" data-open=\""+a.id+"\">Open</button><button class=\"cb\" data-lim=\""+a.id+"\">Hit limit</button>";
     return "<div class=\"card"+(out?" wait":"")+"\" data-ai=\""+a.id+"\" style=\"--c:"+a.color+"\"><div class=\"ctop\">"+icHtml(a)+
-      "<div class=\"cname\">"+a.label+"<small><i></i><span class=\"lt\" data-left=\""+a.id+"\">"+(out?"Back in "+left(a.id):"Ready")+"</span></small></div>"+ring+"</div><div class=\"cact\">"+acts+"</div></div>";
+      "<div class=\"cname\">"+a.label+"<small><span class=\"lt\" data-left=\""+a.id+"\">"+(out?"Back in "+left(a.id):"Ready")+"</span></small></div>"+ring+"</div><div class=\"cact\">"+acts+"</div></div>";
   }).join("");
-  each("#cards [data-open]",function(b){ b.onclick=function(){ go(aiOf(b.dataset.open),$("q").value.trim()); }; });
+  each("#cards .card",function(c){ c.onpointermove=function(e){ var r=c.getBoundingClientRect(); c.style.setProperty("--mx",(e.clientX-r.left)+"px"); c.style.setProperty("--my",(e.clientY-r.top)+"px"); }; });
+  each("#cards [data-open]",function(b){ b.onclick=function(){ var a=aiOf(b.dataset.open); choose(a.id); go(a,$("q").value.trim()); }; });
   each("#cards [data-lim]",function(b){ b.onclick=function(){ openLimit(b.dataset.lim); }; });
   each("#cards [data-clear]",function(b){ b.onclick=function(){ clearLimit(b.dataset.clear); }; });
   each("#cards [data-cont]",function(b){ b.onclick=function(){ var n=nextAfter(b.dataset.cont); if (n) go(n,lastQuestion()); }; });
@@ -438,12 +489,10 @@ function drawCards(){
 function drawRail(){
   $("rail").innerHTML=AIS.map(function(a){
     var out=isOut(a.id);
-    return "<button class=\"ri\" data-ropen=\""+a.id+"\">"+icHtml(a)+"<i class=\"st"+(out?" wait":"")+"\"></i><span class=\"tip\">"+a.label+" · "+(out?"back in "+left(a.id):"ready")+"</span></button>";
+    return "<button class=\"ri"+(out?" wait":"")+"\" data-ropen=\""+a.id+"\">"+icHtml(a)+"<span class=\"tip\">"+a.label+" · "+(out?"back in "+left(a.id):"ready")+"</span></button>";
   }).join("");
   each("[data-ropen]",function(b){ b.onclick=function(){
-    var a=aiOf(b.dataset.ropen);
-    if (isOut(a.id)){ var n=nextAfter(a.id); toast(a.label+" is paused"+(n?" – opening "+n.label:"")); if (n) go(n,$("q").value.trim()); return; }
-    go(a,$("q").value.trim());
+    var a=aiOf(b.dataset.ropen); choose(a.id); go(a,$("q").value.trim());
   }; });
 }
 function drawAll(){ drawPicker(); drawRoute(); drawCards(); drawRail(); }
@@ -478,7 +527,7 @@ function drawRecent(){
   if (!recent.length){ $("recent").innerHTML="<div class=\"empty\">Your questions show up here</div>"; return; }
   $("recent").innerHTML=recent.slice(0,8).map(function(r,i){
     var a=aiOf(r.ai)||AIS[0], d=new Date(r.at);
-    return "<button class=\"item\" data-r=\""+i+"\"><i class=\"d\" style=\"background:"+a.color+"\"></i><span class=\"t\">"+esc(r.t)+"</span><small>"+d.toLocaleDateString([],{day:"numeric",month:"short"})+"</small></button>";
+    return "<button class=\"item\" data-r=\""+i+"\"><span class=\"t\">"+esc(r.t)+"</span><small>"+d.toLocaleDateString([],{day:"numeric",month:"short"})+"</small></button>";
   }).join("");
   each("[data-r]",function(b){ b.onclick=function(){ $("q").value=recent[+b.dataset.r].t; autosize(); $("q").focus(); window.scrollTo({top:0,behavior:"smooth"}); }; });
 }
@@ -500,17 +549,37 @@ document.addEventListener("keydown",function(e){ if (e.key==="Escape") each(".sh
 /* install */
 var standalone=matchMedia("(display-mode: standalone)").matches || navigator.standalone;
 var isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent);
-var deferred=null;
+var deferred=null, ua=navigator.userAgent;
 if (!isPhone) $("installT").textContent="Install app";
-window.addEventListener("beforeinstallprompt",function(e){ e.preventDefault(); deferred=e; if (!standalone) $("installBtn").hidden=false; });
-if (isIOS && !standalone) $("installBtn").hidden=false;
-$("installBtn").onclick=function(){
-  if (deferred){ deferred.prompt(); deferred.userChoice.then(function(){ $("installBtn").hidden=true; deferred=null; }); }
-  else $("iosSheet").hidden=false;
+if (standalone) $("installBtn").hidden=true;
+window.addEventListener("beforeinstallprompt",function(e){ e.preventDefault(); deferred=e; });
+window.addEventListener("appinstalled",function(){ $("installBtn").hidden=true; $("iosSheet").hidden=true; toast("Installed – find Expecct with your apps"); });
+var HOW = {
+  chrome: ["Chrome", ["Click the <b>install icon</b> at the right of the address bar","Or open the <b>⋮</b> menu → <b>Cast, save and share</b> → <b>Install page as app</b>","Click <b>Install</b>"]],
+  edge:   ["Edge",   ["Click the <b>App available</b> icon in the address bar","Or open the <b>…</b> menu → <b>Apps</b> → <b>Install this site as an app</b>","Click <b>Install</b>"]],
+  safari: ["Mac Safari", ["Open the <b>File</b> menu (or <b>Share</b>)","Choose <b>Add to Dock</b>","Click <b>Add</b>"]],
+  iphone: ["iPhone", ["Tap <b>Share</b> at the bottom of Safari","Tap <b>Add to Home Screen</b>","Tap <b>Add</b>"]],
+  android:["Android", ["Open the <b>⋮</b> menu in Chrome","Tap <b>Install app</b> or <b>Add to Home screen</b>","Tap <b>Install</b>"]]
 };
+var myHow = isIOS ? "iphone" : /Android/.test(ua) ? "android" : /Edg\//.test(ua) ? "edge" : /Chrome\//.test(ua) ? "chrome" : /Safari\//.test(ua) ? "safari" : "chrome";
+function showHow(k){
+  $("itab").innerHTML=Object.keys(HOW).map(function(x){ return "<button class=\""+(x===k?"on":"")+"\" data-how=\""+x+"\">"+HOW[x][0]+"</button>"; }).join("");
+  $("isteps").innerHTML=HOW[k][1].map(function(t){ return "<li>"+t+"</li>"; }).join("");
+  each("[data-how]",function(b){ b.onclick=function(){ showHow(b.dataset.how); }; });
+}
+function install(){
+  if (standalone){ toast("Expecct is already installed"); return; }
+  if (deferred){ deferred.prompt(); deferred.userChoice.then(function(r){ if (r.outcome==="accepted") $("installBtn").hidden=true; deferred=null; }); return; }
+  showHow(myHow); $("iosSheet").hidden=false;
+}
+$("installBtn").onclick=install;
+if (/[?&]install=1/.test(location.search)){
+  history.replaceState(null,"",location.pathname);
+  setTimeout(function(){ if (deferred) toast("Press Install app at the top"); else install(); },900);
+}
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function(){});
 
-applyStyle(); greet(); drawSizes(); drawAll(); drawRecent(); autosize();
+applyStyle(); greet(); drawSizes(); drawAll(); drawRecent(); drawSignin(); autosize();
 </script>
 </body>
 </html>
