@@ -262,8 +262,10 @@ var GROUP = [["chatgpt","OpenAI",/(^|\/)(gpt|o\d)/i],["claude","Anthropic",/clau
 var BAD = /image|audio|tts|realtime|transcri|embed|search|banana|vision-preview|omni|codex|:flex|:priority/i;
 function tier(m){ var c=m.cost&&m.cost.input; if (c==null) return ""; return c<100?"$":c<500?"$$":"$$$"; }
 function nice(m){ return m.name || String(m.id).split("/").pop().replace(/-/g," ").replace(/\b(gpt|claude|gemini)\b/i,function(x){ return {gpt:"GPT",claude:"Claude",gemini:"Gemini"}[x.toLowerCase()]; }); }
+var loadingModels=false;
 function resolve(){
   if (ready) return ready;
+  loadingModels=true;
   ready = Promise.resolve().then(function(){ return puter.ai.listModels(); }).then(function(list){
     list=(list||[]).slice().sort(function(x,y){ return (String(x.id).indexOf(":")>=0)-(String(y.id).indexOf(":")>=0); });
     CHOICES.forEach(function(c){
@@ -276,8 +278,8 @@ function resolve(){
       return { id:g[0], label:g[1], models:list.filter(function(m){ var id=String(m.id); if (id.indexOf(":")>=0 || BAD.test(id) || !g[2].test(id) || seen[id]) return false; seen[id]=1; return true; })
         .sort(function(a,b){ return String(b.id).localeCompare(String(a.id),undefined,{ numeric:true }); }).slice(0,10) };
     }).filter(function(g){ return g.models.length; });
-    drawModel();
-  }).catch(function(){});
+    loadingModels=false; drawModel();
+  }).catch(function(){ loadingModels=false; ready=null; drawModel(); });
   return ready;
 }
 function closePops(){ $("modelPop").hidden=true; $("runPop").hidden=true; }
@@ -293,13 +295,13 @@ function drawModel(){
     h += "<div style=\"padding:8px 9px 4px;color:var(--fg3);font-size:11px;border-top:1px solid var(--line);margin-top:4px\">"+g.label+"</div>" +
       g.models.map(function(m){ return "<button class=\""+(exact===m.id?"on":"")+"\" data-x=\""+esc(m.id)+"\"><span>"+esc(nice(m))+"<small>"+esc(m.id)+(tier(m)?" · "+tier(m):"")+"</small></span><span class=\"ck\">"+I.check+"</span></button>"; }).join("");
   });
-  if (!catalog.length) h += "<div style=\"padding:8px 9px;color:var(--fg3);font-size:11.5px\">Log in to see every model you can use</div>";
+  if (!catalog.length) h += "<div style=\"padding:8px 9px;color:var(--fg3);font-size:11.5px\">"+(loadingModels?"Loading models…":"Couldn't load the model list – check your internet")+"</div>";
   h += "<div style=\"padding:8px 9px 4px;color:var(--fg3);font-size:11px;border-top:1px solid var(--line);margin-top:4px\">$ cheap · $$$ uses your free credit faster</div>";
   $("modelPop").innerHTML=h;
   each("[data-m]",function(b){ b.onclick=function(){ pick=b.dataset.m; exact=""; save("model",pick); save("exact",""); drawModel(); closePops(); }; });
   each("[data-x]",function(b){ b.onclick=function(){ exact=b.dataset.x; save("exact",exact); drawModel(); closePops(); }; });
 }
-$("modelBtn").onclick=function(){ var h=$("modelPop").hidden; closePops(); $("modelPop").hidden=!h; if (h && !catalog.length && window.puter) resolve(); };
+$("modelBtn").onclick=function(){ var h=$("modelPop").hidden; closePops(); $("modelPop").hidden=!h; if (h && !catalog.length && window.puter){ ready=null; resolve(); drawModel(); } };
 var autoRun=false;
 function drawRun(){
   $("runT").textContent = autoRun ? "Run commands by itself" : "Ask before commands";
@@ -510,7 +512,7 @@ D.onToken(function(tok){ try { puter.setAuthToken(tok); toast("You're logged in"
 
 /* ---------- start ---------- */
 drawModel(); drawRun(); drawTasks(); drawGo();
-if (window.puter && puter.auth && puter.auth.isSignedIn()) resolve();
+if (window.puter) resolve();   // the list of models works without logging in
 A.info().then(function(i){ info=i||info; autoRun=!!info.autoRun; drawFolder(); drawRun(); });
 openTask(tasks[0] && Date.now()-tasks[0].at<6*3600*1000 ? tasks[0] : null);
 </script>

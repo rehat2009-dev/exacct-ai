@@ -797,7 +797,7 @@ function drawRecent(){
 /* style */
 function drawModelSel(){
   var el=$("modelSel");
-  if (!allModels.length){ el.innerHTML = window.puter && puter.auth && puter.auth.isSignedIn() ? "<small>Loading models…</small>" : "<b>Models</b><small>Log in (send one message) to pick from every model you can use.</small>"; return; }
+  if (!allModels.length){ el.innerHTML = "<b>Models</b><small>"+(window.puter ? "Loading models…" : "Couldn't load the model list – check your internet")+"</small>"; return; }
   var tier=function(m){ var c=m.cost&&m.cost.input; return c==null?"":c<100?"  ·  $":c<500?"  ·  $$":"  ·  $$$"; };
   el.innerHTML = "<b>Models</b>" + AIS.map(function(a){
     var mine = allModels.filter(function(m){ return PICK_RE[a.id].test(m.id); }).sort(function(x,y){ return String(y.id).localeCompare(String(x.id),undefined,{numeric:true}); });
@@ -808,7 +808,7 @@ function drawModelSel(){
   each("[data-ms]",function(sel){ sel.onchange=function(){ cfg.models=cfg.models||{}; if (sel.value) cfg.models[sel.dataset.ms]=sel.value; else delete cfg.models[sel.dataset.ms]; save("cfg",cfg); modelsReady=null; resolveModels().then(drawModelSel); toast("Model saved"); }; });
 }
 $("styleBtn").onclick=function(){
-  if (window.puter && puter.auth && puter.auth.isSignedIn()) resolveModels().then(drawModelSel);
+  if (window.puter){ if (!allModels.length) modelsReady=null; resolveModels().then(drawModelSel); }
   drawModelSel();
   $("nm").value=cfg.name;
   $("accs").innerHTML=ACCENTS.map(function(a){ return "<button class=\"sw"+(cfg.accent===a?" on":"")+"\" data-acc=\""+a+"\" style=\"background:"+a+"\" aria-label=\"Colour\"></button>"; }).join("");
