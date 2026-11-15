@@ -388,7 +388,7 @@ var STEPS = {
 /* the file comes as a download, so the page stays here */
 function startDownload(url){ window.location.assign(url); }
 document.addEventListener("click", function(e){
-  var a = e.target.closest("a.dl, #dlagain"); if (!a || a.getAttribute("href") === "phone/") return;
+  var a = e.target.closest("a.dl, a.dlx, #dlagain"); if (!a || a.getAttribute("href") === "phone/") return;
   if (!TARGET) { e.preventDefault(); startDownload(a.href); }
   if (a.id === "dlagain") return;
   $("dlsteps").innerHTML = STEPS[/\.dmg$/.test(a.href) ? "mac" : "win"].map(function(t){ return "<li><span>" + t + "</span></li>"; }).join("");
@@ -396,6 +396,16 @@ document.addEventListener("click", function(e){
   $("dlhelp").hidden = false;
 });
 $("dlclose").onclick = function(){ $("dlhelp").hidden = true; };
+/* "Install app": on a computer it downloads the real Expecct app right away; on a phone it opens the install steps */
+(function(){
+  var ua = navigator.userAgent, ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  var os = /Windows/.test(ua) ? "win" : (/Macintosh|Mac OS X/.test(ua) && !ios) ? "mac" : "";
+  if (!os || isPhone) return;
+  Array.prototype.forEach.call(document.querySelectorAll('a[href="app/?install=1"]'), function(a){
+    a.href = REL + "Expecct-ChatGPT-" + (os === "win" ? "Windows.exe" : "Mac.dmg");
+    a.classList.add("dlx");
+  });
+})();
 $("dlhelp").addEventListener("click", function(e){ if (e.target.id === "dlhelp") $("dlhelp").hidden = true; });
 
 /* reveal + stars */
