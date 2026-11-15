@@ -16,6 +16,10 @@ contextBridge.exposeInMainWorld("expecctDesktop", {
     tool: (name, args) => call("tool", name, args),
     stop: () => call("agentStop"),
     undo: () => call("agentUndo"),
-    setAutoRun: on => call("setAutoRun", !!on)
+    setAutoRun: on => call("setAutoRun", !!on),
+    listFiles: () => call("listFiles"),
+    notes: () => call("notes"),
+    pickFiles: () => call("pickFiles"),
+    git: (action, arg) => call("git", action, arg)
   }
 });

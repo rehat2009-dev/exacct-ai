@@ -615,7 +615,72 @@ const TOOLS = {
     return "Opened " + f;
   }
 };
+// git, file list, attachments and project notes for the Work page
+function gitRun(args, input) {
+  return new Promise(res => {
+    if (!ws()) return res({ ok: false, out: "No project folder" });
+    execFile("git", args, { cwd: ws(), windowsHide: true, maxBuffer: 8 * 1024 * 1024, timeout: 30000 }, (err, stdout, stderr) => {
+      res({ ok: !err, out: String(stdout || ""), err: String(stderr || (err && err.message) || "") });
+    });
+  });
+}
+function listProjectFiles() {
+  const out = [], base = ws();
+  if (!base) return out;
+  (function walk(dir, depth) {
+    if (out.length >= 3000 || depth > 10) return;
+    let items = []; try { items = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
+    for (const it of items) {
+      if (out.length >= 3000) return;
+      if (it.name.startsWith(".") && it.name !== ".github") continue;
+      const f = path.join(dir, it.name);
+      if (it.isDirectory()) { if (!SKIP_DIRS.has(it.name)) walk(f, depth + 1); }
+      else out.push(path.relative(base, f).split(path.sep).join("/"));
+    }
+  })(base, 0);
+  return out;
+}
 const AG = {
+  listFiles: () => listProjectFiles(),
+  notes: () => {
+    for (const n of ["EXPECCT.md", "AGENTS.md", "CLAUDE.md"]) {
+      try { const f = path.join(ws(), n); if (ws() && fs.existsSync(f)) return { name: n, text: fs.readFileSync(f, "utf8").slice(0, 20000) }; } catch {}
+    }
+    return null;
+  },
+  pickFiles: async () => {
+    dialogOpen = true;
+    const r = await dialog.showOpenDialog(win, { title: "Attach files", properties: ["openFile", "multiSelections"], defaultPath: ws() || app.getPath("documents") });
+    dialogOpen = false;
+    return r.canceled ? [] : r.filePaths.slice(0, 10);
+  },
+  git: async (action, arg) => {
+    if (action === "status") {
+      const b = await gitRun(["rev-parse", "--abbrev-ref", "HEAD"]);
+      if (!b.ok) return { repo: false, err: /not a git repository/i.test(b.err) ? "" : b.err };
+      const st = await gitRun(["status", "--porcelain=v1", "-uall"]);
+      const files = st.out.split("\n").filter(Boolean).slice(0, 500).map(l => ({ s: l.slice(0, 2).trim() || "M", path: l.slice(3).replace(/^"|"$/g, "").split(" -> ").pop() }));
+      return { repo: true, branch: b.out.trim(), files };
+    }
+    if (action === "diff") {
+      const file = String(arg || "");
+      let d = await gitRun(["diff", "HEAD", "--", file]);
+      if (d.ok && !d.out.trim()) {   // new file that git does not know yet
+        try { const f = where(file, true); if (fs.existsSync(f)) { const t = fs.readFileSync(f, "utf8").slice(0, 200000); return { ok: true, out: "+++ " + file + "\n" + t.split("\n").map(l => "+" + l).join("\n") }; } } catch {}
+      }
+      if (!d.ok) d = await gitRun(["diff", "--", file]);
+      return { ok: d.ok, out: d.out.slice(0, 300000) };
+    }
+    if (action === "commit") {
+      const msg = String(arg || "").trim().slice(0, 2000);
+      if (!msg) return { ok: false, out: "Write a commit message first" };
+      const a = await gitRun(["add", "-A"]); if (!a.ok) return { ok: false, out: a.err };
+      const c = await gitRun(["commit", "-m", msg]);
+      return { ok: c.ok, out: (c.out + c.err).trim() };
+    }
+    if (action === "init") { const r = await gitRun(["init"]); return { ok: r.ok, out: (r.out + r.err).trim() }; }
+    return { ok: false, out: "Unknown git action" };
+  },
   agentInfo: () => ({ platform: process.platform === "win32" ? "Windows" : isMac ? "macOS" : "Linux", home: app.getPath("home"), workspace: ws(), autoRun: !!cfg.autoRun }),
   pickFolder: async () => {
     dialogOpen = true;
