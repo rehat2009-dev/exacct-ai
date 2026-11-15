@@ -309,7 +309,11 @@ html.desktop,.desktop body{background:#0d0d0f}
   .hello{margin-top:8px}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
-.lwait{font-size:12.5px;color:var(--muted,#8d8d99);margin:0;text-align:center}
+.lwait{font-size:12.5px;color:var(--muted,#8d8d99);margin:0;text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center}
+.lrow{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center}
+.lrow span{opacity:.85}
+.lchip{font:inherit;font-size:12px;padding:4px 10px;border-radius:999px;border:1px solid var(--line,rgba(255,255,255,.12));background:transparent;color:inherit;cursor:pointer}
+.lchip:hover{background:rgba(255,255,255,.06)}
 </style>
 </head>
 <body>
@@ -385,7 +389,7 @@ html.desktop,.desktop body{background:#0d0d0f}
   <p>Log in once in your browser – Google works there – and you come right back here, logged in.</p>
   <div class="lsteps"><i>1</i> Browser opens <span>→</span> <i>2</i> Log in <span>→</span> <i>3</i> Back in Expecct</div>
   <button class="big lbtn" id="loginBrowser"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M2 8h12M8 2c1.8 1.7 2.6 3.7 2.6 6S9.8 12.3 8 14M8 2C6.2 3.7 5.4 5.7 5.4 8s.8 4.3 2.6 6"/></svg>Log in with browser</button>
-  <p class="lwait" id="loginWait" hidden>Waiting for the browser… If you're already logged in on the website, it happens by itself.</p>
+  <div class="lwait" id="loginWait" hidden></div>
   <button class="big ghost" id="loginHere">Log in with email in this window</button>
 </div></div>
 
@@ -726,9 +730,21 @@ if (DESK){
     try { puter.setAuthToken(tok); } catch(e){ toast("Login didn't work – try again"); return; }
     toast("You're logged in"); loggedIn();
   });
-  $("loginBrowser").onclick=function(){ Promise.resolve(window.expecctDesktop.login()).catch(function(){}); $("loginWait").hidden=false; };
+  $("loginBrowser").onclick=function(){ Promise.resolve(window.expecctDesktop.login()).then(showLoginHelp).catch(function(){ showLoginHelp(null); }); };
   $("loginHere").onclick=function(){ puter.auth.signIn({ attempt_temp_user_creation:true }).then(loggedIn).catch(function(){ toast("Login was closed – try Log in with browser"); }); };
   $("loginSheet").onclick=function(e){ if (e.target.id==="loginSheet") $("loginSheet").hidden=true; };
+}
+function showLoginHelp(r){
+  var DX=window.expecctDesktop, w=document.getElementById("loginWait"); w.hidden=false; w.textContent="";
+  var p=document.createElement("div");
+  p.textContent=(r&&r.browser)?"Opened in "+r.browser+". Log in there – you come right back here.":"Your browser opened. Log in there – you come right back here.";
+  w.appendChild(p);
+  var row=document.createElement("div"); row.className="lrow";
+  var other=(r&&r.browsers||[]).filter(function(b){ return !(r.browser && r.browser.toLowerCase().indexOf(b.name.toLowerCase())>=0); });
+  if (other.length && DX.loginIn){ var t=document.createElement("span"); t.textContent="Not your browser? Open in"; row.appendChild(t);
+    other.forEach(function(b){ var x=document.createElement("button"); x.type="button"; x.className="lchip"; x.textContent=b.name; x.onclick=function(){ DX.loginIn(b.id).then(function(ok){ toast(ok?"Opened in "+b.name:"Press Log in with browser again"); }); }; row.appendChild(x); }); }
+  if (DX.copyLogin){ var c=document.createElement("button"); c.type="button"; c.className="lchip"; c.textContent="Copy link"; c.onclick=function(){ DX.copyLogin().then(function(ok){ toast(ok?"Link copied – paste it in your browser":"Press Log in with browser again"); }); }; row.appendChild(c); }
+  if (row.childNodes.length) w.appendChild(row);
 }
 function autosize(){ var q=$("q"); if (!q.value || !q.clientWidth){ q.style.height=""; return; } q.style.height="auto"; q.style.height=Math.min(220,q.scrollHeight)+"px"; }
 addEventListener("resize",autosize);
