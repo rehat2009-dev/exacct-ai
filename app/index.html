@@ -254,6 +254,14 @@ svg{width:18px;height:18px;flex:none}
 .af button:hover{color:var(--fg);background:rgba(255,255,255,.06)}
 .af svg{width:14px;height:14px}
 .send.stop{background:#fff;color:#0a0a0d}
+/* inside the Expecct desktop app */
+.desktop .rail,.desktop #installBtn,.desktop .desk,.desktop #signin,.desktop #name,.desktop .bar .logo{display:none!important}
+.desktop .bar{justify-content:flex-end;min-height:36px}
+.desktop .wrap{padding-top:14px}
+.lbtn{display:flex;align-items:center;justify-content:center;gap:10px}
+.lbtn svg{width:18px;height:18px}
+.lsteps{display:flex;gap:8px;align-items:center;justify-content:center;color:var(--muted);font-size:12.5px;font-weight:700}
+.lsteps i{font-style:normal;color:var(--fg)}
 @media(max-width:759px){
   .rail{display:none}
   .bar .logo{display:block}
@@ -334,6 +342,14 @@ svg{width:18px;height:18px;flex:none}
   <button class="big" id="styleDone">Done</button>
 </div></div>
 
+<div class="sheet" id="loginSheet" hidden><div>
+  <h2><img src="icon-192.png" alt="" style="width:34px;height:34px;border-radius:10px">Log in to chat</h2>
+  <p>Log in once in your browser – Google works there – and you come right back here, logged in.</p>
+  <div class="lsteps"><i>1</i> Browser opens <span>→</span> <i>2</i> Log in <span>→</span> <i>3</i> Back in Expecct</div>
+  <button class="big lbtn" id="loginBrowser"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M2 8h12M8 2c1.8 1.7 2.6 3.7 2.6 6S9.8 12.3 8 14M8 2C6.2 3.7 5.4 5.7 5.4 8s.8 4.3 2.6 6"/></svg>Log in with browser</button>
+  <button class="big ghost" id="loginHere">Log in here instead</button>
+</div></div>
+
 <div class="sheet" id="popSheet" hidden><div>
   <h2>Allow pop-ups once</h2>
   <ol class="steps"><li>Click the <b>blocked pop-up</b> icon at the right of the address bar</li><li>Choose <b>Always allow</b></li><li>Try again</li></ol>
@@ -373,6 +389,8 @@ if (!cfg.size) cfg.size="medium";
 if (!cfg.pick) cfg.pick="auto";
 var recent = load("recent",[]);
 var limits = load("limits",{});              // { ai: { from: ms, until: ms } }
+var DESK = !!window.expecctDesktop;
+if (DESK) document.documentElement.classList.add("desktop");
 var isPhone = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (matchMedia("(pointer:coarse)").matches && innerWidth<760);
 
 var tt;
@@ -456,6 +474,7 @@ function box(size,slot,count){
 }
 var wins={};
 function openAI(a,url,slot,count){
+  if (DESK){ window.expecctDesktop.open(a.id); return true; }
   if (isPhone){ location.href=url; return true; }
   var old=wins[a.id]; if (old && !old.closed){ try{ old.close(); }catch(e){} }
   var w=window.open(url,"expecct-"+a.id,box(cfg.size,slot,count));
@@ -463,6 +482,7 @@ function openAI(a,url,slot,count){
   wins[a.id]=w; try{ w.focus(); }catch(e){} return true;
 }
 function go(a,t,slot,count){
+  if (DESK){ if (t){ remember(t,a.id); window.expecctDesktop.ask(a.id,t); } else window.expecctDesktop.open(a.id); return true; }
   if (t) remember(t,a.id);
   if (!t) return openAI(a,a.open,slot,count);
   if (a.ask) return openAI(a,a.ask(t),slot,count);
@@ -553,7 +573,7 @@ function finishAns(el,a,turn,text){
   el.classList.add("done");
   el.querySelector(".af").innerHTML="<button data-act=\"copy\">"+I_COPY+"Copy</button><button data-act=\"open\">"+I_OUT+"Open in "+a.label+"</button>";
   el.querySelector("[data-act=copy]").onclick=function(){ copy(text||""); toast("Copied"); };
-  el.querySelector("[data-act=open]").onclick=function(){ openAI(a, a.ask ? a.ask(turn.q) : a.open); if (!a.ask){ copy(turn.q); toast("Question copied – paste it in "+a.label); } };
+  el.querySelector("[data-act=open]").onclick=function(){ if (DESK){ window.expecctDesktop.ask(a.id,turn.q); return; } openAI(a, a.ask ? a.ask(turn.q) : a.open); if (!a.ask){ copy(turn.q); toast("Question copied – paste it in "+a.label); } };
 }
 function buildMsgs(aid,upto){
   var msgs=[{ role:"system", content:"You are "+aiOf(aid).label+", answering inside the Expecct app. Answer in the same language the user writes in. Use short paragraphs and markdown." }];
@@ -646,12 +666,29 @@ function send(){
   $("q").value=""; autosize();
   if (!window.puter){ toast("Chat here isn't available – opening "+list[0].label); go(list[0],t); return; }
   var start=function(){ ask(list,t); };
+  if (DESK && puter.auth && !puter.auth.isSignedIn()){ pendingAsk={ list:list, t:t }; $("q").value=t; autosize(); $("loginSheet").hidden=false; return; }
   if (puter.auth && !puter.auth.isSignedIn()){
     puter.auth.signIn({ attempt_temp_user_creation:true }).then(start).catch(function(){ $("q").value=t; autosize(); toast("Sign in once to chat here"); });
   } else start();
 }
 $("send").onclick=send;
-function autosize(){ var q=$("q"); q.style.height="auto"; q.style.height=Math.min(220,q.scrollHeight)+"px"; }
+/* desktop app: log in with the browser, the app hands the key back here */
+var pendingAsk=null;
+function loggedIn(){
+  $("loginSheet").hidden=true;
+  if (pendingAsk){ var p=pendingAsk; pendingAsk=null; if ($("q").value.trim()===p.t){ $("q").value=""; autosize(); } ask(p.list,p.t); }
+}
+if (DESK){
+  window.expecctDesktop.onToken(function(tok){
+    try { puter.setAuthToken(tok); } catch(e){ toast("Login didn't work – try again"); return; }
+    toast("You're logged in"); loggedIn();
+  });
+  $("loginBrowser").onclick=function(){ window.expecctDesktop.login(); toast("Finish logging in in your browser"); };
+  $("loginHere").onclick=function(){ puter.auth.signIn({ attempt_temp_user_creation:true }).then(loggedIn).catch(function(){ toast("Login was closed"); }); };
+  $("loginSheet").onclick=function(e){ if (e.target.id==="loginSheet") $("loginSheet").hidden=true; };
+}
+function autosize(){ var q=$("q"); if (!q.value || !q.clientWidth){ q.style.height=""; return; } q.style.height="auto"; q.style.height=Math.min(220,q.scrollHeight)+"px"; }
+addEventListener("resize",autosize);
 $("q").addEventListener("input",autosize);
 $("q").addEventListener("keydown",function(e){
   if (e.key==="Enter" && !e.shiftKey && (!isPhone || e.ctrlKey || e.metaKey)){ e.preventDefault(); send(); }

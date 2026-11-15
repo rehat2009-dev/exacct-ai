@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Log in · Expecct</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="icon-192.png">
+<style>
+:root{--bg:#09090c;--card:rgba(24,24,31,.8);--fg:#f3f3f6;--muted:#8d8d99;--line:rgba(255,255,255,.08);--accent:#8b5cf6;--pink:#ec4899;--ok:#34d399;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+body{min-height:100dvh;display:grid;place-items:center;padding:24px 16px;overflow-x:hidden}
+.bg{position:fixed;inset:0;z-index:-1;overflow:hidden}
+.bg i{position:absolute;width:60vmax;height:60vmax;border-radius:50%;filter:blur(90px);opacity:.25}
+.bg i:nth-child(1){background:var(--accent);top:-38vmax;left:-14vmax;animation:d1 22s ease-in-out infinite alternate}
+.bg i:nth-child(2){background:var(--pink);opacity:.13;bottom:-40vmax;right:-20vmax;animation:d2 26s ease-in-out infinite alternate}
+@keyframes d1{to{transform:translate(12vmax,8vmax)}}
+@keyframes d2{to{transform:translate(-10vmax,-8vmax)}}
+.box{width:min(400px,100%);background:var(--card);border:1px solid var(--line);border-radius:26px;padding:30px 26px;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center;
+  -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 30px 80px rgba(0,0,0,.5);animation:rise .6s cubic-bezier(.2,.8,.2,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(16px)}}
+.box img{width:64px;height:64px;border-radius:18px}
+h1{margin:0;font-size:24px;letter-spacing:-.02em}
+p{margin:-6px 0 0;color:var(--muted)}
+button,a.btn{width:100%;padding:14px;border-radius:14px;border:0;background:#fff;color:#0a0a0d;font:inherit;font-weight:800;font-size:15.5px;cursor:pointer;text-decoration:none;transition:transform .15s,box-shadow .2s}
+button:hover,a.btn:hover{transform:translateY(-1px);box-shadow:0 12px 30px color-mix(in srgb,var(--accent) 45%,transparent)}
+button:disabled{opacity:.6;cursor:default;transform:none}
+.ok{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
+.ok svg{width:30px;height:30px}
+.small{font-size:12.5px;color:var(--muted)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="bg" aria-hidden="true"><i></i><i></i></div>
+
+<div class="box" id="step1">
+  <img src="icon-192.png" alt="Expecct">
+  <h1>Log in to Expecct</h1>
+  <p>Log in here, and you go straight back to the app – logged in.</p>
+  <button id="go">Log in</button>
+  <span class="small">Free · Google, Apple and email work here</span>
+</div>
+
+<div class="box" id="step2" hidden>
+  <div class="ok"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 8.5 3 3 6-7"/></svg></div>
+  <h1>You're logged in</h1>
+  <p>Go back to the Expecct app. If it didn't open by itself, press the button.</p>
+  <a class="btn" id="back" href="#">Open Expecct</a>
+  <span class="small">You can close this tab afterwards.</span>
+</div>
+
+<div class="box" id="bad" hidden>
+  <img src="icon-192.png" alt="Expecct">
+  <h1>Open this from the app</h1>
+  <p>In the Expecct app, press <b>Send</b> and then <b>Log in with browser</b>.</p>
+  <a class="btn" href="./">Use Expecct in the browser instead</a>
+</div>
+
+<script src="https://js.puter.com/v2/"></script>
+<script>
+// The app opens this page with a random "state". After you log in, we send you back to the app
+// (expecct://auth) with that state and a key that lets the app's chat use your account.
+var state = new URLSearchParams(location.search).get("state") || "";
+function $(id){ return document.getElementById(id); }
+function show(id){ ["step1","step2","bad"].forEach(function(x){ $(x).hidden = x !== id; }); }
+if (!/^[a-f0-9]{16,64}$/.test(state)) show("bad");
+function finish(){
+  var tok = window.puter && puter.authToken;
+  if (!tok){ show("step1"); $("go").disabled = false; $("go").textContent = "Log in"; return; }
+  var link = "expecct://auth?state=" + state + "&token=" + encodeURIComponent(tok);
+  $("back").href = link;
+  history.replaceState(null, "", location.pathname);
+  show("step2");
+  setTimeout(function(){ location.href = link; }, 300);
+}
+$("go").onclick = function(){
+  if (!window.puter){ $("go").textContent = "Couldn't load – reload the page"; return; }
+  $("go").disabled = true; $("go").textContent = "Logging in…";
+  if (puter.auth.isSignedIn()) { finish(); return; }
+  puter.auth.signIn({ attempt_temp_user_creation: true }).then(finish).catch(function(){
+    $("go").disabled = false; $("go").textContent = "Log in";
+  });
+};
+</script>
+</body>
+</html>
