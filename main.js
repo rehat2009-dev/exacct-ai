@@ -414,9 +414,32 @@ function makePage(PAGE_URL) {
   wc.on("before-input-event", onKeys);
   wc.on("context-menu", (_e, p) => contextMenu(wc, p));
   wc.on("did-finish-load", () => { wc.setZoomFactor(cfg.zoom / 100); if (pendingToken) deliverToken(); });
-  wc.on("did-fail-load", (_e, code, _d, url, main) => { if (main && code !== -3) setTimeout(() => { if (!wc.isDestroyed()) wc.loadURL(PAGE_URL).catch(() => {}); }, 4000); });
-  wc.loadURL(PAGE_URL).catch(() => {});
+  wc.on("did-fail-load", (_e, code, _d, url, main) => { if (main && code !== -3) setTimeout(() => { if (!wc.isDestroyed()) loadFresh(wc, PAGE_URL); }, 4000); });
+  wc.on("did-finish-load", () => { wc.__loadedAt = Date.now(); });
+  wc.__pageUrl = PAGE_URL;
+  loadFresh(wc, PAGE_URL);
   return v;
+}
+// the Chat and Agent pages live on the website: always load the newest version, never an old cached one
+const NOCACHE = "Cache-Control: no-cache\nPragma: no-cache\n";
+function loadFresh(wc, url) { pageTag(url).then(t => { wc.__tag = t; }); return wc.loadURL(url, { extraHeaders: NOCACHE }).catch(() => {}); }
+async function pageTag(url) {
+  try { const r = await net.fetch(url, { method: "HEAD", cache: "no-store" }); return r.headers.get("etag") || r.headers.get("last-modified") || ""; } catch { return ""; }
+}
+// when you come back to the app, quietly load a newer page if one was published (only when nothing is running)
+async function refreshPages() {
+  for (const v of [chatView, agentView]) {
+    if (!v || v.webContents.isDestroyed() || v.webContents.isLoading()) continue;
+    const wc = v.webContents;
+    if (Date.now() - (wc.__loadedAt || 0) < 10 * 60 * 1000) continue;
+    try {
+      const busy = await wc.executeJavaScript("!!(window.running || (window.busy && window.busy.length) || (document.activeElement && document.activeElement.value))", true);
+      if (busy) continue;
+      const tag = await pageTag(wc.__pageUrl);
+      wc.__loadedAt = Date.now();
+      if (tag && wc.__tag && tag !== wc.__tag) loadFresh(wc, wc.__pageUrl);
+    } catch {}
+  }
 }
 function openChat(page) {
   cfg.chatMode = true; cfg.page = page === "agent" ? "agent" : "chat"; saveCfg();
@@ -987,7 +1010,7 @@ const H = {
     if (cfg.chatMode && current() && (a === "home" || a === "reload" || a === "back")) {
       const pv = current();
       if (a === "home") pv.executeJavaScript("var b=document.getElementById('newBtn')||document.getElementById('newTask'); if (b) b.click();", true).catch(() => {});
-      if (a === "reload") pv.reload();
+      if (a === "reload") pv.reloadIgnoringCache();
       return;
     }
     if (a === "back" && wc && wc.navigationHistory.canGoBack()) wc.navigationHistory.goBack();
@@ -1145,7 +1168,7 @@ function createWindow() {
   };
   win.on("moved", remember);
   win.on("resized", remember);
-  win.on("focus", () => send("winfocus", true));
+  win.on("focus", () => { send("winfocus", true); refreshPages(); });
   win.on("blur", () => {
     send("winfocus", false);
     if (!cfg.autoHide || dialogOpen) return;
