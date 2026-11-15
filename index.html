@@ -123,6 +123,18 @@ nav{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .dl svg{width:14px;height:14px}
 .dl.main{background:#fff;color:#0a0a0b;border-color:#fff}
 .dl:hover{transform:translateY(-2px);box-shadow:0 10px 30px color-mix(in srgb,var(--c) 50%,transparent)}
+.appcard{display:flex;align-items:center;gap:16px;background:linear-gradient(120deg,color-mix(in srgb,var(--accent) 22%,var(--surface)),var(--surface));border:1px solid var(--line);border-radius:22px;padding:20px}
+.appcard img{width:56px;height:56px}
+.appcard div{flex:1;min-width:0}
+.appcard b{display:block;font-size:1.2rem}
+.appcard span{color:var(--muted);font-weight:600;font-size:.88rem}
+.appcard .dl{flex:none;padding:12px 22px;font-size:.95rem}
+@media (max-width:560px){.appcard{flex-wrap:wrap}.appcard .dl{flex:1 1 100%}}
+.classic{margin-top:14px}
+.classic summary{cursor:pointer;color:var(--muted);font-weight:600;font-size:.85rem;padding:8px 2px;list-style:none}
+.classic summary::-webkit-details-marker{display:none}
+.classic summary::after{content:" ▾"}
+.classic[open] summary{margin-bottom:10px}
 footer{text-align:center;color:var(--muted);font-size:.72rem;letter-spacing:.35em;text-transform:uppercase}
 
 /* download help */
@@ -151,8 +163,8 @@ footer{text-align:center;color:var(--muted);font-size:.72rem;letter-spacing:.35e
 <div class="wrap">
   <nav>
     <p class="logo"><img src="icon.png" alt="">Expecct</p>
-    <a class="pill" href="#download">Download
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v9M4 7l4 4 4-4M3 14h10"/></svg></a>
+    <a class="pill" href="app/">Open app
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h9.5M8.5 3.5 13 8l-4.5 4.5"/></svg></a>
   </nav>
 
   <section class="hero">
@@ -184,8 +196,13 @@ footer{text-align:center;color:var(--muted);font-size:.72rem;letter-spacing:.35e
   </section>
 
   <section class="sec reveal" id="download">
-    <div class="label">Download</div>
-    <div class="dlgrid" id="dlgrid"></div>
+    <div class="label">Get Expecct</div>
+    <div class="appcard">
+      <img src="icon.png" alt="">
+      <div><b>Expecct</b><span>Nothing to download · No warnings · Google sign-in works</span></div>
+      <a class="dl main" href="app/">Open Expecct</a>
+    </div>
+    <details class="classic"><summary>Classic desktop app (download)</summary><div class="dlgrid" id="dlgrid"></div></details>
   </section>
 
   <footer>Expecct</footer>
@@ -299,11 +316,6 @@ $("dlgrid").innerHTML = AIS.map(function(a){
   var m = "<a class=\"dl" + (isMac ? " main" : "") + "\" href=\"" + REL + "Expecct-" + a[0] + "-Mac.dmg\"" + tgt + ">" + MAC + "Mac</a>";
   return "<div class=\"dcard\" style=\"--c:" + a[1] + "\"><div class=\"dtop\"><img src=\"icon.png\" alt=\"\"><div><b>Expecct</b><small><i></i>" + a[0] + "</small></div></div><div class=\"dls\">" + (isMac ? m + w : w + m) + "</div></div>";
 }).join("");
-var isPhone = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (matchMedia("(pointer: coarse)").matches && innerWidth < 820);
-var PHONE = "<svg viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" aria-hidden=\"true\"><rect x=\"4\" y=\"1.5\" width=\"8\" height=\"13\" rx=\"2\"/><path d=\"M7 12h2\"/></svg>";
-var phoneCard = "<div class=\"dcard\" style=\"--c:#8b5cf6\"><div class=\"dtop\"><img src=\"" + document.querySelector(".logo img").getAttribute("src") + "\" alt=\"\"><div><b>Expecct</b><small><i></i>Phone</small></div></div><div class=\"dls\"><a class=\"dl main\" href=\"phone/\">" + PHONE + "Open phone app</a></div></div>";
-$("dlgrid").insertAdjacentHTML(isPhone ? "afterbegin" : "beforeend", phoneCard);
-if (isPhone) { var nb = document.querySelector("nav .pill"); nb.firstChild.textContent = "Get the app "; nb.setAttribute("href", "phone/"); Array.prototype.forEach.call(document.querySelectorAll(".dl.main"), function(x){ if (x.getAttribute("href") !== "phone/") x.classList.remove("main"); }); }
 var STEPS = {
   win: ["Open the file", "<b>More info</b> → <b>Run anyway</b>", "Done – it opens by itself"],
   mac: ["Open the file", "Drag it to <b>Applications</b>", "Blocked? <b>Settings → Privacy &amp; Security → Open Anyway</b>"]
@@ -311,7 +323,7 @@ var STEPS = {
 /* the file comes as a download, so the page stays here */
 function startDownload(url){ window.location.assign(url); }
 document.addEventListener("click", function(e){
-  var a = e.target.closest("a.dl, #dlagain"); if (!a || a.getAttribute("href") === "phone/") return;
+  var a = e.target.closest("a.dl, #dlagain"); if (!a || !/\/releases\//.test(a.href)) return;
   if (!TARGET) { e.preventDefault(); startDownload(a.href); }
   if (a.id === "dlagain") return;
   $("dlsteps").innerHTML = STEPS[/\.dmg$/.test(a.href) ? "mac" : "win"].map(function(t){ return "<li><span>" + t + "</span></li>"; }).join("");
