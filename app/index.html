@@ -90,6 +90,19 @@ svg{width:18px;height:18px;flex:none}
 .pk.on{background:#fff;color:#0a0a0d;border-color:#fff}
 .pk i{width:7px;height:7px;border-radius:50%}
 .pk.off{opacity:.45;text-decoration:line-through}
+.mwrap{position:relative;flex:none}
+.mdl{display:flex;align-items:center;gap:4px;height:32px;padding:0 8px 0 11px;border-radius:999px;color:var(--muted);font-weight:700;font-size:12.5px;max-width:170px;transition:color .2s,background .2s}
+.mdl:hover{color:var(--fg);background:rgba(255,255,255,.06)}
+.mdl span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mdl svg{width:13px;height:13px}
+.mpop{position:absolute;right:0;bottom:calc(100% + 8px);width:260px;max-height:min(420px,60vh);overflow:auto;background:#1c1c22;border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:5px;box-shadow:0 16px 50px rgba(0,0,0,.55);z-index:20;animation:up .2s ease both}
+.mpop .mh{padding:8px 10px 4px;color:var(--muted);font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.mpop button{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:8px 10px;border-radius:9px;font-size:13px;font-weight:600;color:#d4d4d8}
+.mpop button:hover{background:rgba(255,255,255,.07);color:#fff}
+.mpop button span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mpop button small{color:var(--muted);font-size:11.5px;font-weight:600}
+.mpop button.on{color:#fff}
+.mpop button.on::after{content:"✓";font-weight:800}
 .send{width:42px;height:42px;border-radius:50%;flex:none;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,var(--accent),var(--pink));
   box-shadow:0 8px 24px -6px color-mix(in srgb,var(--accent) 70%,transparent);transition:transform .25s cubic-bezier(.3,1.6,.5,1),filter .2s}
 .send:hover{transform:scale(1.08) rotate(-8deg)}
@@ -280,6 +293,7 @@ html.desktop,.desktop body{background:#0d0d0f}
 .lsteps{display:flex;gap:8px;align-items:center;justify-content:center;color:var(--muted);font-size:12.5px;font-weight:700}
 .lsteps i{font-style:normal;color:var(--fg)}
 @media(max-width:759px){
+  .mdl{max-width:112px;padding:0 6px 0 9px}
   .rail{display:none}
   .bar .logo{display:block}
   .desk{display:none!important}
@@ -318,6 +332,7 @@ html.desktop,.desktop body{background:#0d0d0f}
       <textarea id="q" placeholder="Ask anything…" rows="2" autofocus></textarea>
       <div class="crow">
         <div class="picker" id="picker"></div>
+        <div class="mwrap"><button class="mdl" id="mdlBtn" title="Choose the model"><span id="mdlT">Model</span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 6.5 3.5 3.5 3.5-3.5"/></svg></button><div class="mpop" id="mdlPop" hidden></div></div>
         <button class="send" id="send" aria-label="Send"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V3M3.5 7.5 8 3l4.5 4.5"/></svg></button>
       </div>
     </div>
@@ -757,7 +772,30 @@ function drawRail(){
     var a=aiOf(b.dataset.ropen); choose(a.id); $("q").focus(); toast("Chatting with "+a.label);
   }; });
 }
-function drawAll(){ drawPicker(); drawRoute(); drawCards(); drawRail(); }
+function drawAll(){ drawPicker(); drawRoute(); drawCards(); drawRail(); drawMdl(); }
+/* model chip in the composer: shows the model your question goes to, click to change it */
+function mName(id){ var m=allModels.filter(function(x){ return x.id===id; })[0]; return (m && m.name) || String(id||"").split("/").pop(); }
+function mTier(m){ var c=m.cost&&m.cost.input; return c==null?"":c<100?"$":c<500?"$$":"$$$"; }
+function drawMdl(){
+  var list=target();
+  $("mdlT").textContent = !modelFor[(list[0]||AIS[0]).id] ? "Model" : list.length>1 ? list.length+" models" : mName(modelFor[list[0].id]);
+}
+function openMdl(){
+  var list = cfg.pick==="auto"||cfg.pick==="all" ? AIS : [aiOf(cfg.pick)];
+  var h="";
+  if (!allModels.length) h="<div class=\"mh\">"+(window.puter?"Loading models…":"Couldn't load models")+"</div>";
+  list.forEach(function(a){
+    var mine=allModels.filter(function(m){ return PICK_RE[a.id].test(m.id); }).sort(function(x,y){ return String(y.id).localeCompare(String(x.id),undefined,{numeric:true}); }).slice(0,12);
+    if (!mine.length) return;
+    var chosen=(cfg.models||{})[a.id]||"";
+    h+="<div class=\"mh\">"+a.label+"</div><button class=\""+(!chosen?"on":"")+"\" data-mm=\""+a.id+"|\"><span>Best pick</span><small>"+esc(mName(modelFor[a.id]))+"</small></button>"+
+      mine.map(function(m){ return "<button class=\""+(chosen===m.id?"on":"")+"\" data-mm=\""+a.id+"|"+esc(m.id)+"\"><span>"+esc(m.name||m.id)+"</span><small>"+mTier(m)+"</small></button>"; }).join("");
+  });
+  $("mdlPop").innerHTML=h; $("mdlPop").hidden=false;
+  each("[data-mm]",function(b){ b.onclick=function(e){ e.stopPropagation(); var p=b.dataset.mm.split("|"); cfg.models=cfg.models||{}; if (p[1]) cfg.models[p[0]]=p[1]; else delete cfg.models[p[0]]; save("cfg",cfg); modelsReady=null; $("mdlPop").hidden=true; resolveModels().then(function(){ drawMdl(); toast(aiOf(p[0]).label+": "+mName(modelFor[p[0]])); }); }; });
+}
+$("mdlBtn").onclick=function(e){ e.stopPropagation(); if (!$("mdlPop").hidden){ $("mdlPop").hidden=true; return; } if (!allModels.length && window.puter){ modelsReady=null; resolveModels().then(function(){ drawMdl(); if (!$("mdlPop").hidden) openMdl(); }); } openMdl(); };
+document.addEventListener("click",function(e){ if (!e.target.closest(".mwrap")) $("mdlPop").hidden=true; });
 
 /* live countdown */
 setInterval(function(){
@@ -856,6 +894,7 @@ if (/[?&]install=1/.test(location.search)){
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function(){});
 
 applyStyle(); greet(); drawSizes(); drawAll(); drawRecent(); drawSignin(); drawThread(); autosize();
+if (window.puter) resolveModels().then(drawMdl);   // load the model list right away (no login needed)
 </script>
 </body>
 </html>
