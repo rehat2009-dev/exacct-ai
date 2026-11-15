@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Expecct Agent</title>
+<link rel="icon" href="icon-192.png">
+<style>
+:root{--bg:#09090c;--card:rgba(24,24,31,.72);--card2:rgba(36,36,46,.9);--fg:#f3f3f6;--muted:#8d8d99;--line:rgba(255,255,255,.07);--accent:#8b5cf6;--pink:#ec4899;--ok:#34d399;--bad:#f87171;--wait:#f5b041;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+[hidden]{display:none!important}
+svg{width:16px;height:16px;flex:none}
+.bg{position:fixed;inset:0;z-index:-1;overflow:hidden}
+.bg i{position:absolute;width:60vmax;height:60vmax;border-radius:50%;filter:blur(100px)}
+.bg i:nth-child(1){background:var(--accent);opacity:.18;top:-44vmax;left:-10vmax;animation:d1 26s ease-in-out infinite alternate}
+.bg i:nth-child(2){background:#22d3ee;opacity:.07;bottom:-46vmax;right:-16vmax;animation:d2 30s ease-in-out infinite alternate}
+@keyframes d1{to{transform:translate(12vmax,8vmax)}}
+@keyframes d2{to{transform:translate(-10vmax,-8vmax)}}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}}
+
+.wrap{max-width:780px;margin:0 auto;padding:14px 18px 0;min-height:100vh;display:flex;flex-direction:column;gap:16px}
+.bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{display:flex;align-items:center;gap:7px;height:34px;padding:0 13px;border-radius:999px;background:var(--card);border:1px solid var(--line);font-weight:700;font-size:13px;transition:background .2s,transform .2s;max-width:100%}
+.pill:hover{background:var(--card2)}
+.pill span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.folder{flex:1 1 200px;min-width:0;justify-content:flex-start}
+.folder.none{border-color:color-mix(in srgb,var(--accent) 60%,transparent);background:color-mix(in srgb,var(--accent) 18%,var(--card))}
+.models{display:flex;gap:4px;padding:3px;border-radius:999px;background:var(--card);border:1px solid var(--line)}
+.models button{padding:5px 11px;border-radius:999px;font-weight:700;font-size:12.5px;color:var(--muted)}
+.models button.on{background:#fff;color:#0a0a0d}
+
+.hero{flex:1;display:flex;flex-direction:column;justify-content:center;gap:16px;padding:20px 0;animation:rise .5s ease both}
+.hero h1{margin:0;font-size:clamp(26px,4.5vw,36px);letter-spacing:-.03em;line-height:1.1}
+.hero h1 b{background:linear-gradient(90deg,#fff,color-mix(in srgb,var(--accent) 60%,#fff));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{margin:-6px 0 0;color:var(--muted)}
+.ideas{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.idea{text-align:left;padding:12px 14px;border-radius:14px;background:var(--card);border:1px solid var(--line);font-weight:600;font-size:13.5px;transition:border-color .2s,transform .2s;display:flex;gap:10px;align-items:flex-start}
+.idea:hover{border-color:color-mix(in srgb,var(--accent) 55%,transparent);transform:translateY(-2px)}
+.idea svg{color:var(--accent);margin-top:2px}
+
+.log{display:flex;flex-direction:column;gap:12px;flex:1}
+.you{align-self:flex-end;max-width:85%;background:var(--card2);border:1px solid var(--line);padding:10px 14px;border-radius:18px 18px 6px 18px;white-space:pre-wrap;word-wrap:break-word;animation:rise .35s ease both}
+.say{line-height:1.6;font-size:14.5px;animation:rise .35s ease both;overflow-wrap:anywhere}
+.say p{margin:0 0 8px}.say>*:last-child{margin-bottom:0}
+.say ul,.say ol{margin:0 0 8px;padding-left:22px}
+.say h3{font-size:15px;margin:10px 0 4px}
+.say code{background:rgba(255,255,255,.08);padding:1px 5px;border-radius:5px;font:12.5px ui-monospace,Menlo,Consolas,monospace}
+.say pre{background:#0c0c11;border:1px solid var(--line);border-radius:10px;padding:10px 12px;overflow-x:auto}
+.say pre code{background:none;padding:0}
+.say.err{color:var(--bad)}
+.step{border:1px solid var(--line);background:var(--card);border-radius:12px;overflow:hidden;animation:rise .3s ease both}
+.sh{display:flex;align-items:center;gap:9px;padding:8px 12px;width:100%;text-align:left;font-size:13px}
+.sh .ico{width:22px;height:22px;border-radius:7px;display:grid;place-items:center;background:rgba(255,255,255,.06);color:var(--muted)}
+.sh .ico svg{width:13px;height:13px}
+.sh .t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.sh .t code{font:12.5px ui-monospace,Menlo,Consolas,monospace;color:#d4d4d8}
+.sh .st{flex:none;width:16px;height:16px;display:grid;place-items:center}
+.spin{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.15);border-top-color:var(--accent);animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.step.ok .st{color:var(--ok)}.step.bad .st{color:var(--bad)}
+.step.run .ico{color:var(--accent)}
+.sb{border-top:1px solid var(--line);max-height:260px;overflow:auto;background:#0b0b10}
+.sb pre{margin:0;padding:10px 12px;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-word;color:#c8c8d0}
+.done{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:12.5px;font-weight:600}
+.done button{padding:5px 10px;border-radius:8px;font-weight:700;color:var(--muted);border:1px solid var(--line)}
+.done button:hover{color:var(--fg)}
+
+.composer{position:sticky;bottom:0;padding:10px 0 16px;background:linear-gradient(transparent,var(--bg) 30%)}
+.box{background:color-mix(in srgb,#14141b 94%,transparent);border:1px solid var(--line);border-radius:20px;padding:12px;transition:border-color .3s,box-shadow .3s}
+.box:focus-within{border-color:color-mix(in srgb,var(--accent) 55%,transparent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 12%,transparent)}
+.box textarea{width:100%;min-height:48px;max-height:200px;resize:none;background:transparent;border:0;outline:none;padding:2px 4px 6px;font-size:15px}
+.row{display:flex;align-items:center;gap:8px}
+.hint{flex:1;min-width:0;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.auto{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:12px;font-weight:700}
+.go{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,var(--accent),var(--pink));box-shadow:0 8px 22px -6px color-mix(in srgb,var(--accent) 70%,transparent);transition:transform .2s}
+.go:hover{transform:scale(1.07)}
+.go.stop{background:#fff;color:#0a0a0d}
+.toast{position:fixed;left:50%;bottom:110px;transform:translate(-50%,40px);background:#fff;color:#0a0a0d;font-weight:700;font-size:13px;padding:9px 16px;border-radius:999px;opacity:0;transition:all .35s;pointer-events:none;z-index:50}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.sheet{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);display:grid;place-items:center;padding:16px}
+.sheet>div{width:min(420px,100%);background:#131319;border:1px solid var(--line);border-radius:22px;padding:22px;display:flex;flex-direction:column;gap:12px;animation:rise .3s ease both}
+.sheet h2{margin:0;font-size:19px}
+.sheet p{margin:-4px 0 0;color:var(--muted)}
+.big{width:100%;padding:13px;border-radius:13px;background:#fff;color:#0a0a0d;font-weight:800}
+.big.ghost{background:transparent;color:var(--muted)}
+.noapp{flex:1;display:grid;place-items:center;text-align:center;color:var(--muted)}
+.noapp a{color:#fff}
+</style>
+</head>
+<body>
+<div class="bg" aria-hidden="true"><i></i><i></i></div>
+<div class="wrap" id="wrap">
+  <div class="bar">
+    <button class="pill folder" id="folder"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M1.8 4.2a1 1 0 0 1 1-1h3.4l1.4 1.6h5.6a1 1 0 0 1 1 1v6.9a1 1 0 0 1-1 1H2.8a1 1 0 0 1-1-1z"/></svg><span id="folderT">Choose a project folder</span></button>
+    <div class="models" id="models"></div>
+    <button class="pill" id="newTask"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>New task</button>
+  </div>
+
+  <div class="hero" id="hero">
+    <h1>What should I <b>build</b>?</h1>
+    <p>I look around your folder, write the code and run it – like Codex. Commands need your OK.</p>
+    <div class="ideas" id="ideas"></div>
+  </div>
+
+  <div class="log" id="log" hidden></div>
+
+  <div class="composer">
+    <div class="box">
+      <textarea id="q" placeholder="Tell the agent what to do…" rows="2"></textarea>
+      <div class="row">
+        <span class="hint" id="hint">Enter to send · Shift+Enter for a new line</span>
+        <label class="auto" title="Run commands without asking"><input type="checkbox" id="autoRun">Auto-run</label>
+        <button class="go" id="go" aria-label="Send"></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="loginSheet" hidden><div>
+  <h2>Log in once</h2>
+  <p>The agent uses the same login as Chat. Your browser opens, you log in, and you come right back.</p>
+  <button class="big" id="loginBrowser">Log in with browser</button>
+  <button class="big ghost" id="loginHere">Log in here instead</button>
+</div></div>
+<div class="toast" id="toast"></div>
+
+<script src="https://js.puter.com/v2/"></script>
+<script>
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s).replace(/[&<>"]/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]; }); }
+function load(k,d){ try{ var v=JSON.parse(localStorage.getItem("expecct.agent."+k)); return v==null?d:v; }catch(e){ return d; } }
+function save(k,v){ try{ localStorage.setItem("expecct.agent."+k,JSON.stringify(v)); }catch(e){} }
+var tt; function toast(t){ var e=$("toast"); e.textContent=t; e.classList.add("show"); clearTimeout(tt); tt=setTimeout(function(){ e.classList.remove("show"); },2600); }
+var D = window.expecctDesktop;
+if (!D || !D.agent) {
+  $("wrap").innerHTML = "<div class=\"noapp\"><div><h2 style=\"color:#fff\">The agent lives in the Expecct app</h2><p>It needs your computer to make files and run commands.<br><a href=\"../#download\">Download Expecct</a> · <a href=\"./\">Use the chat here</a></p></div></div>";
+  throw new Error("not in app");
+}
+var A = D.agent;
+
+/* ---------- icons ---------- */
+var SVG = function(p){ return "<svg viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\">"+p+"</svg>"; };
+var IC = {
+  list_dir: SVG("<path d=\"M1.8 4.2a1 1 0 0 1 1-1h3.4l1.4 1.6h5.6a1 1 0 0 1 1 1v6.9a1 1 0 0 1-1 1H2.8a1 1 0 0 1-1-1z\"/>"),
+  read_file: SVG("<path d=\"M4 1.8h5.5L12.5 5v9.2H4z\"/><path d=\"M6 8h4.5M6 10.5h4.5\"/>"),
+  write_file: SVG("<path d=\"M10.5 2.5l3 3L6 13H3v-3z\"/>"),
+  edit_file: SVG("<path d=\"M10.5 2.5l3 3L6 13H3v-3z\"/>"),
+  search_files: SVG("<circle cx=\"7\" cy=\"7\" r=\"4.5\"/><path d=\"m10.5 10.5 3 3\"/>"),
+  run_command: SVG("<rect x=\"1.8\" y=\"2.5\" width=\"12.4\" height=\"11\" rx=\"2\"/><path d=\"m4.5 6.5 2 1.8-2 1.8M8.5 10.5h3\"/>"),
+  open_path: SVG("<path d=\"M9 2.5h4.5V7M13.5 2.5 7 9M11.5 9.5v3a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3\"/>")
+};
+var OK = SVG("<path d=\"m3.5 8.5 3 3 6-7\"/>"), BAD = SVG("<path d=\"m4 4 8 8M12 4l-8 8\"/>");
+var I_SEND = SVG("<path d=\"M8 13V3M3.5 7.5 8 3l4.5 4.5\"/>"), I_STOP = "<svg viewBox=\"0 0 16 16\"><rect x=\"4\" y=\"4\" width=\"8\" height=\"8\" rx=\"1.5\" fill=\"currentColor\"/></svg>";
+
+/* ---------- tools the AI can use ---------- */
+function fn(name, desc, props, req){ return { type:"function", function:{ name:name, description:desc, parameters:{ type:"object", properties:props, required:req||[] } } }; }
+var S = { type:"string" };
+var TOOLS = [
+  fn("list_dir","List files and folders. Path is relative to the project folder, or absolute to look elsewhere on the computer.",{ path:{ type:"string", description:"Folder path. Use \".\" for the project folder." } },["path"]),
+  fn("read_file","Read a text file. Returns up to ~80 KB.",{ path:S },["path"]),
+  fn("search_files","Search text in files under a folder (regex, case-insensitive). Skips node_modules and .git.",{ pattern:S, path:{ type:"string", description:"Folder to search, default the project folder." } },["pattern"]),
+  fn("write_file","Create or overwrite a file inside the project folder. Makes folders as needed.",{ path:S, content:S },["path","content"]),
+  fn("edit_file","Replace text in a file inside the project folder. old_text must appear exactly once.",{ path:S, old_text:S, new_text:S },["path","old_text","new_text"]),
+  fn("run_command","Run a shell command in the project folder (cmd.exe on Windows, zsh/sh on Mac/Linux). Returns exit code and output. Use for building, testing, running Blender headless, git, npm, python etc.",{ command:S, timeout_seconds:{ type:"number", description:"Default 120, max 900." } },["command"]),
+  fn("open_path","Open a file, folder or app on the user's computer with its normal program (for example open a .blend file in Blender or a .rbxl in Roblox Studio).",{ path:S },["path"])
+];
+function label(name,a){
+  a=a||{};
+  var p=function(x){ return "<code>"+esc(String(x||"").slice(0,120))+"</code>"; };
+  return { list_dir:"Looked in "+p(a.path||"."), read_file:"Read "+p(a.path), search_files:"Searched for "+p(a.pattern), write_file:"Wrote "+p(a.path),
+    edit_file:"Edited "+p(a.path), run_command:"Ran "+p(a.command), open_path:"Opened "+p(a.path) }[name] || esc(name);
+}
+
+/* ---------- models ---------- */
+var CHOICES = [["claude","Claude",/claude-sonnet-5-5|claude-sonnet-5|claude-opus-5/i],["chatgpt","ChatGPT",/gpt-6-astra|gpt-6|gpt-5\.4|gpt-5/i],["gemini","Gemini",/gemini-4-argon|gemini-3\.8-flash|gemini-4/i]];
+var pick = load("model","claude"), modelId = {}, ready = null;
+function resolve(){
+  if (ready) return ready;
+  ready = Promise.resolve().then(function(){ return puter.ai.listModels(); }).then(function(list){
+    list=(list||[]).slice().sort(function(x,y){ return (String(x.id).indexOf(":")>=0)-(String(y.id).indexOf(":")>=0); });
+    CHOICES.forEach(function(c){
+      var srcs=String(c[2].source).split("|");
+      for (var i=0;i<srcs.length && !modelId[c[0]];i++){ var re=new RegExp("(^|/)"+srcs[i]+"$","i"); var m=list.filter(function(x){ return re.test(x.id); })[0]; if (m) modelId[c[0]]=m.id; }
+    });
+  }).catch(function(){});
+  return ready;
+}
+function drawModels(){
+  $("models").innerHTML=CHOICES.map(function(c){ return "<button class=\""+(pick===c[0]?"on":"")+"\" data-m=\""+c[0]+"\">"+c[1]+"</button>"; }).join("");
+  Array.prototype.forEach.call(document.querySelectorAll("[data-m]"),function(b){ b.onclick=function(){ pick=b.dataset.m; save("model",pick); drawModels(); }; });
+}
+
+/* ---------- markdown (short) ---------- */
+function md(src){
+  return String(src).split("```").map(function(p,i){
+    if (i%2){ var nl=p.indexOf("\n"); var code=nl>=0&&/^[\w+#.-]*$/.test(p.slice(0,nl))?p.slice(nl+1):p; return "<pre><code>"+esc(code.replace(/\n$/,""))+"</code></pre>"; }
+    var out="", list=null;
+    p.split("\n").forEach(function(l){
+      var t=esc(l).replace(/`([^`]+)`/g,"<code>$1</code>").replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>"), m;
+      if ((m=l.match(/^\s*([-*]|\d+[.)])\s+/))){ var k=/\d/.test(m[1])?"ol":"ul"; if (list!==k){ if (list) out+="</"+list+">"; out+="<"+k+">"; list=k; } out+="<li>"+t.replace(/^\s*([-*]|\d+[.)])\s+/,"")+"</li>"; return; }
+      if (list){ out+="</"+list+">"; list=null; }
+      if (/^#{1,6}\s/.test(l)) out+="<h3>"+t.replace(/^#{1,6}\s+/,"")+"</h3>"; else if (l.trim()) out+="<p>"+t+"</p>";
+    });
+    if (list) out+="</"+list+">";
+    return out;
+  }).join("");
+}
+
+/* ---------- state ---------- */
+var info = { platform:"", home:"", workspace:"" }, hist = load("hist",[]), busy=false, stopped=false, taskId=0;
+function drawFolder(){
+  var w=info.workspace;
+  $("folderT").textContent = w ? w.split(/[\\/]/).filter(Boolean).pop() + "  ·  " + w : "Choose a project folder";
+  $("folder").classList.toggle("none",!w); $("folder").title = w || "";
+}
+$("folder").onclick=function(){ A.pickFolder().then(function(w){ if (w){ info.workspace=w; drawFolder(); toast("Working in "+w.split(/[\\/]/).pop()); } }); };
+$("autoRun").onchange=function(){ var on=$("autoRun").checked; A.setAutoRun(on).then(function(v){ $("autoRun").checked=!!v; if (on && !v) toast("Allow it in the window that opened"); }); };
+
+var IDEAS = [
+  "Make a Roblox script that lets the player sprint with Shift",
+  "Write a Blender Python script that builds a low-poly house and run it",
+  "Look at this project and explain how it works",
+  "Find and fix the errors in my code",
+  "Make a simple website with HTML, CSS and JS and open it",
+  "Set up a Python project with a virtual environment"
+];
+$("ideas").innerHTML=IDEAS.map(function(t,i){ return "<button class=\"idea\" data-i=\""+i+"\">"+IC.write_file+"<span>"+esc(t)+"</span></button>"; }).join("");
+Array.prototype.forEach.call(document.querySelectorAll("[data-i]"),function(b){ b.onclick=function(){ $("q").value=IDEAS[+b.dataset.i]; autosize(); $("q").focus(); }; });
+
+function showLog(){ $("hero").hidden=true; $("log").hidden=false; }
+function add(cls,html){ var e=document.createElement("div"); e.className=cls; e.innerHTML=html; $("log").appendChild(e); scroll(); return e; }
+function scroll(){ window.scrollTo(0,document.documentElement.scrollHeight); }
+function setBusy(b){ busy=b; $("go").innerHTML=b?I_STOP:I_SEND; $("go").classList.toggle("stop",b); $("go").setAttribute("aria-label",b?"Stop":"Send"); }
+function autosize(){ var q=$("q"); if (!q.value){ q.style.height=""; return; } q.style.height="auto"; q.style.height=Math.min(200,q.scrollHeight)+"px"; }
+$("q").addEventListener("input",autosize);
+$("q").addEventListener("keydown",function(e){ if (e.key==="Enter" && !e.shiftKey){ e.preventDefault(); go(); } });
+$("go").onclick=go;
+$("newTask").onclick=function(){ if (busy) stop(); hist=[]; save("hist",hist); $("log").innerHTML=""; $("log").hidden=true; $("hero").hidden=false; $("q").focus(); };
+
+function stepEl(name,args){
+  var e=add("step run","<button class=\"sh\"><span class=\"ico\">"+(IC[name]||IC.run_command)+"</span><span class=\"t\">"+label(name,args)+"</span><span class=\"st\"><i class=\"spin\"></i></span></button><div class=\"sb\" hidden><pre></pre></div>");
+  e.querySelector(".sh").onclick=function(){ var b=e.querySelector(".sb"); b.hidden=!b.hidden; };
+  return e;
+}
+function finishStep(e,ok,text){
+  e.classList.remove("run"); e.classList.add(ok?"ok":"bad");
+  e.querySelector(".st").innerHTML = ok?OK:BAD;
+  e.querySelector("pre").textContent = String(text||"").slice(0,20000);
+}
+function textOf(msg){
+  if (!msg) return "";
+  var c=msg.content;
+  if (typeof c==="string") return c;
+  if (Array.isArray(c)) return c.map(function(x){ return x && (x.text || (x.type==="text" && x.content)) || ""; }).join("");
+  return "";
+}
+function system(){
+  return "You are Expecct Agent, a coding agent like Codex running inside the Expecct desktop app on the user's own computer.\n" +
+    "Computer: " + info.platform + ". Home folder: " + info.home + ". Project folder: " + (info.workspace || "(none chosen yet)") + ".\n" +
+    "Tools: list_dir, read_file, search_files (read anywhere), write_file and edit_file (only inside the project folder), run_command (shell in the project folder; the user may need to approve it), open_path.\n" +
+    "How to work: explore first (list_dir, read_file), then make the change, then check it by running something when that makes sense. Prefer small, correct edits. Never delete the user's files unless asked. If a command fails, read the error and try to fix it.\n" +
+    "Blender: run it headless with: blender --background --python script.py (Windows path is usually \"C:\\\\Program Files\\\\Blender Foundation\\\\Blender <version>\\\\blender.exe\", Mac: /Applications/Blender.app/Contents/MacOS/Blender). Save results as .blend files in the project folder.\n" +
+    "Roblox: write Luau scripts as .luau files in the project (use Rojo if the project has default.project.json). Tell the user where each script goes in Roblox Studio (for example ServerScriptService or StarterPlayerScripts).\n" +
+    "Answer in the same language the user writes in. Be short: say what you did and what to do next.";
+}
+function go(){
+  if (busy){ stop(); return; }
+  var t=$("q").value.trim(); if (!t) return;
+  if (!window.puter){ toast("Couldn't load the AI – check your internet"); return; }
+  if (puter.auth && !puter.auth.isSignedIn()){ pending=t; $("loginSheet").hidden=false; return; }
+  $("q").value=""; autosize();
+  run(t);
+}
+var pending=null;
+function stop(){ stopped=true; A.stop(); setBusy(false); toast("Stopped"); }
+async function run(t){
+  showLog(); stopped=false; setBusy(true);
+  var my=++taskId;
+  add("you","").textContent=t;
+  hist.push({ role:"user", content:t });
+  await resolve();
+  var model = modelId[pick];
+  var msgs=[{ role:"system", content:system() }].concat(hist.slice(-40));
+  var changed=0;
+  try {
+    for (var round=0; round<40; round++){
+      if (stopped || my!==taskId) return;
+      var thinking=add("say","<span class=\"spin\" style=\"display:inline-block\"></span>");
+      var opts={ tools:TOOLS }; if (model) opts.model=model;
+      var res = await puter.ai.chat(msgs, false, opts);
+      thinking.remove();
+      if (stopped || my!==taskId) return;
+      var msg = res && res.message ? res.message : { role:"assistant", content:String(res||"") };
+      if (!msg.role) msg.role="assistant";
+      msgs.push(msg);
+      var text=textOf(msg).trim();
+      if (text) add("say",md(text));
+      var calls = msg.tool_calls || [];
+      if (!calls.length){ hist.push({ role:"assistant", content:text || "Done." }); break; }
+      for (var i=0;i<calls.length;i++){
+        var c=calls[i], name=c.function && c.function.name, args={};
+        try { args = typeof c.function.arguments==="string" ? JSON.parse(c.function.arguments||"{}") : (c.function.arguments||{}); } catch(e){}
+        var el=stepEl(name,args), out;
+        try { out = await A.tool(name,args); } catch(e){ out={ ok:false, text:String(e && e.message || e) }; }
+        out = out || { ok:false, text:"No answer from the app" };
+        if (out.ok && (name==="write_file" || name==="edit_file")) changed++;
+        finishStep(el,out.ok,out.text);
+        msgs.push({ role:"tool", tool_call_id:c.id, content:String(out.text||"").slice(0,24000) });
+        if (stopped) return;
+      }
+    }
+  } catch(e){
+    var m=(e && (e.message || (e.error && e.error.message))) || String(e);
+    add("say err",esc(/insufficient|funds|credit|quota|limit/i.test(m) ? "Free AI usage is used up for now. Try again later or pick another model." : "Something went wrong: "+m.slice(0,200)));
+  } finally {
+    if (my===taskId){
+      setBusy(false); save("hist",hist.slice(-40));
+      if (changed){ var d=add("done","<span>"+changed+" change"+(changed>1?"s":"")+" saved in your folder</span><button>Undo</button><button>Open folder</button>");
+        var b=d.querySelectorAll("button"); b[0].onclick=function(){ A.undo().then(function(n){ toast(n?"Undid "+n+" change"+(n>1?"s":""):"Nothing to undo"); b[0].disabled=true; }); }; b[1].onclick=function(){ A.tool("open_path",{ path:"." }); }; }
+      scroll();
+    }
+  }
+}
+
+/* ---------- login (same as Chat) ---------- */
+$("loginBrowser").onclick=function(){ D.login(); toast("Finish logging in in your browser"); };
+$("loginHere").onclick=function(){ puter.auth.signIn({ attempt_temp_user_creation:true }).then(loggedIn).catch(function(){}); };
+$("loginSheet").onclick=function(e){ if (e.target.id==="loginSheet") $("loginSheet").hidden=true; };
+function loggedIn(){ $("loginSheet").hidden=true; if (pending){ var t=pending; pending=null; $("q").value=""; autosize(); run(t); } }
+D.onToken(function(tok){ try { puter.setAuthToken(tok); toast("You're logged in"); loggedIn(); } catch(e){} });
+
+/* ---------- start ---------- */
+setBusy(false); drawModels();
+A.info().then(function(i){ info=i||info; drawFolder(); $("autoRun").checked=!!info.autoRun; });
+if (hist.length){ showLog(); hist.forEach(function(m){ if (m.role==="user") add("you","").textContent=m.content; else if (m.content) add("say",md(m.content)); }); }
+$("q").focus();
+</script>
+</body>
+</html>
