@@ -503,12 +503,46 @@ function startLoginServer(state) {
     srv.listen(0, "127.0.0.1", () => { loginServer = srv; loginTimer = setTimeout(stopLoginServer, 30 * 60 * 1000); resolve(srv.address().port); });
   });
 }
+// browsers we can open the login page in (when your default browser isn't the one you use)
+const BROWSERS = isMac ? [
+  { id: "chrome", name: "Chrome", app: "/Applications/Google Chrome.app" },
+  { id: "edge", name: "Edge", app: "/Applications/Microsoft Edge.app" },
+  { id: "brave", name: "Brave", app: "/Applications/Brave Browser.app" },
+  { id: "firefox", name: "Firefox", app: "/Applications/Firefox.app" },
+  { id: "arc", name: "Arc", app: "/Applications/Arc.app" },
+  { id: "safari", name: "Safari", app: "/Applications/Safari.app" }
+] : process.platform === "win32" ? (() => {
+  const roots = [process.env.ProgramFiles, process.env["ProgramFiles(x86)"], process.env.LOCALAPPDATA].filter(Boolean);
+  const find = rel => roots.map(r => path.join(r, rel)).find(f => { try { return fs.statSync(f).isFile(); } catch { return false; } });
+  return [
+    { id: "chrome", name: "Chrome", exe: find("Google\\Chrome\\Application\\chrome.exe") },
+    { id: "edge", name: "Edge", exe: find("Microsoft\\Edge\\Application\\msedge.exe") },
+    { id: "brave", name: "Brave", exe: find("BraveSoftware\\Brave-Browser\\Application\\brave.exe") },
+    { id: "firefox", name: "Firefox", exe: find("Mozilla Firefox\\firefox.exe") },
+    { id: "opera", name: "Opera", exe: find("Programs\\Opera\\opera.exe") || find("Opera\\opera.exe") },
+    { id: "operagx", name: "Opera GX", exe: find("Programs\\Opera GX\\opera.exe") }
+  ].filter(b => b.exe);
+})() : [];
+const installedBrowsers = () => BROWSERS.filter(b => b.exe || (b.app && fs.existsSync(b.app)));
+let loginUrl = "";
 async function startLogin() {
   loginState = crypto.randomBytes(18).toString("hex");
   writeJson("login.json", { state: loginState, time: Date.now() });
   registerScheme();
   const port = await startLoginServer(loginState);
-  shell.openExternal(LOGIN_URL + "?state=" + loginState + (port ? "&port=" + port : ""));
+  loginUrl = LOGIN_URL + "?state=" + loginState + (port ? "&port=" + port : "");
+  shell.openExternal(loginUrl);
+  let browser = ""; try { browser = app.getApplicationNameForProtocol("https://") || ""; } catch {}
+  browser = browser.replace(/\.(exe|app)$/i, "").replace(/^Google /, "");
+  return { ok: true, browser, browsers: installedBrowsers().map(b => ({ id: b.id, name: b.name })) };
+}
+function loginIn(id) {
+  if (!loginUrl || !loginState) return false;
+  const b = installedBrowsers().find(x => x.id === id); if (!b) return false;
+  try {
+    const p = isMac ? spawn("open", ["-a", b.app, loginUrl], { detached: true, stdio: "ignore" }) : spawn(b.exe, [loginUrl], { detached: true, stdio: "ignore" });
+    p.on("error", () => {}); p.unref();
+  } catch { return false; }
   return true;
 }
 function acceptLogin(state, token) {
@@ -535,6 +569,8 @@ function deliverToken() {
 const linkIn = argv => (argv || []).find(a => typeof a === "string" && a.toLowerCase().startsWith(SCHEME + "://"));
 const CH = {
   login: () => startLogin(),
+  loginIn: id => loginIn(String(id || "")),
+  copyLogin: () => { if (!loginUrl || !loginState) return false; clipboard.writeText(loginUrl); return true; },
   open: ai => { if (AIS[ai]) switchAI(ai); },
   ask: (ai, text) => { if (AIS[ai]) askOne(ai, String(text || "").slice(0, 20000)); },
   version: () => pkg.version

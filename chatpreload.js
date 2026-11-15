@@ -5,6 +5,8 @@ ipcRenderer.on("puter-token", (_e, t) => { if (listener) listener(t); else token
 const call = (ch, ...a) => ipcRenderer.invoke("xc", ch, ...a);
 contextBridge.exposeInMainWorld("expecctDesktop", {
   login: () => call("login"),
+  loginIn: id => call("loginIn", id),
+  copyLogin: () => call("copyLogin"),
   open: ai => call("open", ai),
   ask: (ai, text) => call("ask", ai, text),
   version: () => call("version"),
