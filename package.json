@@ -1,7 +1,7 @@
 {
   "name": "exacct-ai",
   "productName": "Exacct AI",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "description": "Your AI in its own window. Pick the size, the place, the icon and the name.",
   "main": "main.js",
   "author": "Expect",
@@ -25,8 +25,7 @@
     "files": [
       "main.js",
       "preload.js",
-      "bar.html",
-      "settings.html",
+      "ui.html",
       "icon.png",
       "package.json"
     ],
