@@ -123,6 +123,16 @@ nav{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .dl svg{width:14px;height:14px}
 .dl.main{background:#fff;color:#0a0a0b;border-color:#fff}
 .dl:hover{transform:translateY(-2px);box-shadow:0 10px 30px color-mix(in srgb,var(--c) 50%,transparent)}
+.webapp{display:flex;align-items:center;gap:16px;background:linear-gradient(120deg,color-mix(in srgb,var(--accent) 26%,var(--surface)),var(--surface));border:1px solid var(--line);border-radius:22px;padding:20px;margin-bottom:16px}
+.webapp img{width:54px;height:54px}
+.webapp .wt{flex:1;min-width:0}
+.webapp .wt b{display:block;font-size:1.15rem}
+.webapp .wt span{color:var(--muted);font-weight:600;font-size:.86rem}
+.webapp .open{flex:none;display:flex;align-items:center;gap:8px;padding:13px 22px;border-radius:999px;background:#fff;color:#0a0a0b;font-weight:800;font-size:.95rem;text-decoration:none;transition:transform .15s}
+.webapp .open:hover{transform:translateY(-2px);box-shadow:0 12px 30px color-mix(in srgb,var(--accent) 45%,transparent)}
+.webapp .open svg{width:16px;height:16px}
+.dlor{color:var(--muted);font-weight:700;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;margin:4px 2px 12px}
+@media(max-width:560px){.webapp{flex-wrap:wrap}.webapp .open{flex:1 1 100%;justify-content:center}}
 footer{text-align:center;color:var(--muted);font-size:.72rem;letter-spacing:.35em;text-transform:uppercase}
 
 /* download help */
@@ -151,8 +161,8 @@ footer{text-align:center;color:var(--muted);font-size:.72rem;letter-spacing:.35e
 <div class="wrap">
   <nav>
     <p class="logo"><img src="icon.png" alt="">Expecct</p>
-    <a class="pill" href="#download">Download
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v9M4 7l4 4 4-4M3 14h10"/></svg></a>
+    <a class="pill" href="app/">Open app
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h9.5M8.5 3.5 13 8l-4.5 4.5"/></svg></a>
   </nav>
 
   <section class="hero">
@@ -184,7 +194,13 @@ footer{text-align:center;color:var(--muted);font-size:.72rem;letter-spacing:.35e
   </section>
 
   <section class="sec reveal" id="download">
-    <div class="label">Download</div>
+    <div class="label">Get Expecct</div>
+    <div class="webapp">
+      <img src="icon.png" alt="">
+      <div class="wt"><b>Open in your browser</b><span>Sign-in works · nothing to download · install as an app</span></div>
+      <a class="open" href="app/">Open Expecct<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h9.5M8.5 3.5 13 8l-4.5 4.5"/></svg></a>
+    </div>
+    <div class="dlor">Or download the desktop app</div>
     <div class="dlgrid" id="dlgrid"></div>
   </section>
 
