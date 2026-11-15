@@ -14,8 +14,8 @@ const AIS = {
 };
 const AI_KEYS = Object.keys(AIS);
 const isMac = process.platform === "darwin";
-const TOP = 44, DRAWER = 340, COLH = 30, ASKH = 54;
-const railW = w => (w < 520 ? 52 : 68);
+const TOP = 40, DRAWER = 340, COLH = 30, ASKH = 54, GAP = 6;
+const railW = () => 52;
 const SITE = "https://rehat2009-dev.github.io/exacct-ai/";
 const REL = process.env.EXPECCT_REL || "https://github.com/rehat2009-dev/exacct-ai/releases/download/latest/";
 const BRAND = "Expecct";
@@ -141,7 +141,9 @@ function layout() {
     v.setVisible(show);
     if (show) {
       const x = left + i * (colW + 1), width = i === n - 1 ? left + avail - x : colW;
-      v.setBounds({ x, y: top, width, height: Math.max(0, h - top) });
+      // the chat area sits like a rounded card, with a small gap on the right and bottom
+      const right = i === n - 1 ? GAP : 0;
+      v.setBounds({ x, y: top, width: Math.max(0, width - right), height: Math.max(0, h - top - GAP) });
       cols.push({ ai: k, x, width });
     }
   }
@@ -342,13 +344,14 @@ function contextMenu(wc, p) {
 function getView(ai) {
   if (views[ai]) return views[ai];
   const v = new WebContentsView({ webPreferences: { partition: "persist:exacct", contextIsolation: true, sandbox: true, backgroundThrottling: false } });
-  v.setBackgroundColor("#09090b");
+  v.setBackgroundColor("#212121");
+  if (typeof v.setBorderRadius === "function") v.setBorderRadius(12);
   v.setVisible(false);
   win.contentView.addChildView(v);
   const wc = v.webContents;
   setupContents(wc, ai);
   wc.on("found-in-page", (_e, r) => { if (r.finalUpdate) send("found", { active: r.activeMatchOrdinal, total: r.matches }); });
-  const nav = () => { if (ai === cfg.ai) send("nav", { canBack: wc.navigationHistory.canGoBack() }); record(ai, wc); };
+  const nav = () => { if (ai === cfg.ai) send("nav", { canBack: wc.navigationHistory.canGoBack(), canFwd: wc.navigationHistory.canGoForward() }); record(ai, wc); };
   wc.on("did-navigate", nav);
   wc.on("did-navigate-in-page", nav);
   wc.on("page-title-updated", () => record(ai, wc));
@@ -373,7 +376,7 @@ function switchAI(ai) {
   const v = getView(ai);
   layout();
   send("state", publicState());
-  send("nav", { canBack: v.webContents.navigationHistory.canGoBack() });
+  send("nav", { canBack: v.webContents.navigationHistory.canGoBack(), canFwd: v.webContents.navigationHistory.canGoForward() });
   send("loading", v.webContents.isLoading());
   if (!ui.drawer) v.webContents.focus();
   if (tray) buildTray();
@@ -653,6 +656,7 @@ const H = {
   act: a => {
     const wc = current();
     if (a === "back" && wc && wc.navigationHistory.canGoBack()) wc.navigationHistory.goBack();
+    if (a === "forward" && wc && wc.navigationHistory.canGoForward()) wc.navigationHistory.goForward();
     if (a === "reload" && wc) wc.reload();
     if (a === "home" && wc) wc.loadURL(AIS[cfg.ai].url, { userAgent: UA() });
     if (a === "min") { if (isMac) win.minimize(); else hideWin(() => win.minimize()); }

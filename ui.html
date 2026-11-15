@@ -212,23 +212,65 @@ kbd{font:600 11px/1 system-ui,sans-serif;background:var(--card2);border:1px soli
 .link{border:0;background:none;color:var(--muted);font-size:13px;text-decoration:underline;text-underline-offset:3px}
 .wtiles{width:100%}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* ===== clean look (v3.2): slim bars, icon-only sidebar, rounded chat area ===== */
+:root{--bg:#181818;--rail:#181818;--panel:#1e1e1e;--card:#262626;--card2:#2f2f2f;--fg:#ececec;--muted:#9b9b9b;--line:rgba(255,255,255,.06);--top:40px;--railw:52px}
+html,body{font-size:13.5px}
+.top{padding:0 0 0 8px;gap:2px;border-bottom:0}
+.t-aurora .top{background:var(--rail)}
+.mac .top{padding-left:80px}
+.id{display:none}
+.navs{display:flex;align-items:center;gap:2px;-webkit-app-region:no-drag}
+.tools{margin-left:auto}
+.tb{width:32px;height:30px;border-radius:8px;color:#a8a8a8}
+.tb svg{width:17px;height:17px}
+.tb:hover{background:rgba(255,255,255,.07)}
+.tb.dot{position:relative}
+.tb.dot::after{content:"";position:absolute;right:6px;top:6px;width:7px;height:7px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 2px var(--rail)}
+.tb.up{color:#fff;background:var(--accent)}
+.tb.up:hover{background:var(--accent);filter:brightness(1.12)}
+.sep{height:16px;margin:0 6px}
+.wb{width:46px;height:var(--top);border:0;background:transparent;color:#cfcfcf;display:grid;place-items:center;transition:background .12s}
+.wb svg{width:14px;height:14px}
+.wb:hover{background:rgba(255,255,255,.08)}
+.wb.close:hover{background:#c42b1c;color:#fff}
+.mac .wb,.mac .sep.win{display:none!important}
+.loadbar{top:calc(var(--top) - 1px)}
+.rail{border-right:0;padding:6px 0 10px;gap:4px}
+.ri{width:38px;height:38px;padding:0;border-radius:10px;justify-content:center;color:#a8a8a8}
+.ri span{display:none}
+.ri svg{width:19px;height:19px}
+.ri.on{background:rgba(255,255,255,.09)}
+.ri.on::before{display:none}
+.aic{width:26px;height:26px;border-radius:8px;font-size:10px}
+.aic.img{padding:4px}
+.ri .so{right:3px;top:3px;width:8px;height:8px;border-color:var(--rail)}
+.ri.vis:not(.on)::after{right:4px;top:auto;bottom:4px;width:5px;height:5px}
+.badge{right:0;top:0;min-width:15px;height:15px;font-size:9px}
+.rsep{width:22px;margin:4px 0}
+.stage{background:#212121}
+.panel{box-shadow:none}
+.tg small,.hint{display:none}
 </style>
 </head>
 <body class="t-aurora">
 <header class="top">
+  <div class="navs">
+    <button class="tb" id="b-back" title="Back (Alt + ←)" disabled><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 8H3.5M7.5 3.5 3 8l4.5 4.5"/></svg></button>
+    <button class="tb" id="b-fwd" title="Forward" disabled><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h9.5M8.5 3.5 13 8l-4.5 4.5"/></svg></button>
+    <button class="tb" id="b-reload" title="Reload (Ctrl + R)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 8a5 5 0 1 1-1.5-3.6M13 2.5V5h-2.5"/></svg></button>
+  </div>
   <div class="id"><img id="icon" alt=""><span class="name" id="name">Expecct</span><span class="crumb" id="crumb"></span></div>
   <div class="tools">
     <div class="find" id="find" hidden><input id="findIn" placeholder="Find in page" autocomplete="off"><span id="findN"></span><button class="tb" id="f-prev" title="Previous (Shift + Enter)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 10 4-4 4 4"/></svg></button><button class="tb" id="f-next" title="Next (Enter)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 6 4 4 4-4"/></svg></button><button class="tb" id="f-x" title="Close (Esc)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m4 4 8 8M12 4l-8 8"/></svg></button></div>
-    <button class="pill2 up" id="b-update" hidden title="A new version is ready"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5v8M4.5 7 8 10.5 11.5 7M3 13.5h10"/></svg><span id="b-updateT">Restart to update</span></button>
-    <button class="pill2" id="b-signin" hidden title="Sign in"><i></i><span>Sign in</span></button>
-    <button class="tb hs" id="b-back" title="Back (Alt + ←)" disabled><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg></button>
-    <button class="tb hs" id="b-reload" title="Reload (Ctrl + R)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 8a5 5 0 1 1-1.5-3.6M13 2.5V5h-2.5"/></svg></button>
-    <button class="newchat" id="b-new" title="New chat (Ctrl + N)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg><span>New chat</span></button>
-    <button class="tb" id="b-mini" title="Mini mode"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="1.8" y="2.5" width="12.4" height="11" rx="2"/><rect x="8.3" y="8" width="4.4" height="3.6" rx="1" fill="currentColor"/></svg></button>
+    <button class="tb up" id="b-update" hidden title="Restart to update"><span id="b-updateT" hidden></span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5v8M4.5 7 8 10.5 11.5 7M3 13.5h10"/></svg></button>
+    <button class="tb dot" id="b-signin" hidden title="Sign in"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="8" cy="5.5" r="2.8"/><path d="M2.8 14c.6-2.8 2.7-4.3 5.2-4.3s4.6 1.5 5.2 4.3"/></svg></button>
+    <button class="tb" id="b-mini" title="Mini mode"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1.8" y="2.5" width="12.4" height="11" rx="2"/><rect x="8.3" y="8" width="4.4" height="3.6" rx="1" fill="currentColor"/></svg></button>
+    <button class="tb" id="b-new" title="New chat (Ctrl + N)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 8.5v4a1.5 1.5 0 0 1-1.5 1.5H4a1.5 1.5 0 0 1-1.5-1.5V4A1.5 1.5 0 0 1 4 2.5h4"/><path d="M11.8 1.9a1.3 1.3 0 0 1 1.9 1.9L8.3 9.2 6 9.8l.6-2.3z"/></svg></button>
     <span class="sep win"></span>
-    <button class="tb win hm" id="b-min" title="Minimise"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 8h10"/></svg></button>
-    <button class="tb win hm" id="b-max" title="Maximise"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3.5" y="3.5" width="9" height="9" rx="1.5"/></svg></button>
-    <button class="tb win close" id="b-close" title="Close"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m4 4 8 8M12 4l-8 8"/></svg></button>
+    <button class="wb win" id="b-min" title="Minimise"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M3 8h10"/></svg></button>
+    <button class="wb win" id="b-max" title="Maximise"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="3.5" y="3.5" width="9" height="9" rx="1"/></svg></button>
+    <button class="wb win close" id="b-close" title="Close"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><path d="m3.5 3.5 9 9M12.5 3.5l-9 9"/></svg></button>
   </div>
 </header>
 <div class="toast" id="toast"></div>
@@ -321,6 +363,7 @@ function render(){
   var u = S.update;
   $("b-update").hidden = !u || (u.status !== "ready" && u.status !== "manual");
   $("b-updateT").textContent = u && u.status === "manual" ? "New version" : "Restart to update";
+  $("b-update").title = $("b-updateT").textContent;
   $("setN").hidden = !u || u.status !== "manual";
   $("r-split").classList.toggle("on", c.split > 1);
   $("splitN").hidden = c.split < 2; $("splitN").textContent = c.split;
@@ -332,6 +375,7 @@ function render(){
 
 /* ---------- top bar ---------- */
 $("b-back").onclick = function(){ call("act", "back"); };
+$("b-fwd").onclick = function(){ call("act", "forward"); };
 $("b-reload").onclick = function(){ call("act", "reload"); };
 $("b-new").onclick = function(){ call("act", "home"); toast("New chat"); };
 $("b-mini").onclick = function(){ call("act", "mini"); };
@@ -513,7 +557,7 @@ function renderLayout(){
     "<div class=\"sec\"><div class=\"lbl\">Window size</div><div class=\"tiles\">" + TILES.map(function(t){ return tileHtml(t[0], t[1], c.size === t[0]); }).join("") + "</div></div>" +
     "<div class=\"sec\"><div class=\"lbl\">Place</div><div class=\"row\" style=\"gap:14px;align-items:center\"><div class=\"pos\">" +
       POS.map(function(p){ return "<button data-pos=\"" + p + "\" class=\"" + (fixed && c.position === p ? "on" : "") + "\" aria-label=\"" + p + "\"></button>"; }).join("") +
-    "</div><div class=\"muted\" style=\"flex:1\">Or drag the top bar anywhere.</div></div></div>" +
+    "</div></div></div>" +
     "<div class=\"sec\"><div class=\"lbl\">Own size</div><div class=\"wh\"><input class=\"field\" type=\"number\" id=\"cw\" min=\"360\" value=\"" + c.width + "\" aria-label=\"Width\"><span class=\"muted\">&times;</span><input class=\"field\" type=\"number\" id=\"ch\" min=\"420\" value=\"" + c.height + "\" aria-label=\"Height\"><button class=\"chip white\" id=\"cset\">Set</button></div></div>" +
     "<div class=\"sec\"><div class=\"lbl\">Text size</div><div class=\"zoom\"><button class=\"chip\" id=\"zo\">A&minus;</button><b>" + c.zoom + "%</b><button class=\"chip\" id=\"zi\">A+</button><button class=\"chip\" id=\"zr\">Reset</button></div></div>" +
     "<div class=\"sec\"><div class=\"lbl\">See-through " + c.opacity + "%</div><input type=\"range\" id=\"op\" min=\"40\" max=\"100\" step=\"5\" value=\"" + c.opacity + "\"></div>" +
@@ -561,7 +605,7 @@ function renderStyle(){
   var ut = !u ? "You have the newest version" : u.status === "downloading" ? "Downloading " + u.version + "... " + (u.pct || 0) + "%" : u.status === "ready" ? "Version " + u.version + " is ready" : u.status === "manual" ? "Version " + u.version + " is out" : "Updating...";
   var ub = u && u.status === "ready" ? "<button class=\"chip white\" id=\"upR\">Restart</button>" : u && u.status === "manual" ? "<button class=\"chip white\" id=\"upO\">Get it</button>" : "<button class=\"chip\" id=\"upC\">Check</button>";
   body.innerHTML =
-    "<div class=\"sec\"><div class=\"lbl\">Accounts</div><div class=\"card\" style=\"padding:6px 14px\">" + accs + "</div><div class=\"muted\">Google sign-in blocked? Use <b>Continue with email</b> instead.</div></div>" +
+    "<div class=\"sec\"><div class=\"lbl\">Accounts</div><div class=\"card\" style=\"padding:6px 14px\">" + accs + "</div></div>" +
     "<div class=\"sec\"><div class=\"lbl\">Name</div><input class=\"field\" id=\"nm\" maxlength=\"40\" value=\"" + esc(c.name) + "\"></div>" +
     "<div class=\"sec\"><div class=\"lbl\">Colour</div><div class=\"row\">" + ACCENTS.map(function(a){ return "<button class=\"sw" + (c.accent === a ? " on" : "") + "\" data-acc=\"" + a + "\" style=\"background:" + a + "\" aria-label=\"Colour\"></button>"; }).join("") + "</div></div>" +
     "<div class=\"sec\"><div class=\"lbl\">Look</div><div class=\"seg\">" + [["aurora","Aurora"],["midnight","Midnight"],["black","Black"]].map(function(t){ return "<button class=\"" + (c.theme === t[0] ? "on" : "") + "\" data-theme=\"" + t[0] + "\">" + t[1] + "</button>"; }).join("") + "</div></div>" +
@@ -575,7 +619,7 @@ function renderStyle(){
       toggle("startup", "Start with computer") + toggle("closeToTray", "Keep running when closed") +
     "</div></div>" +
     "<div class=\"sec\"><div class=\"lbl\">Shortcuts</div><div class=\"keys\">" + keys.map(function(k){ return "<span>" + k[0] + "</span><kbd>" + k[1] + "</kbd>"; }).join("") + "</div></div>" +
-    "<div class=\"sec\"><div class=\"lbl\">Updates</div><div class=\"card ver\"><div><b>" + esc(S.cfg.name) + " " + esc(S.version || "") + "</b><div class=\"muted\">" + ut + "</div></div>" + ub + "</div><div class=\"muted\">New versions install by themselves.</div></div>" +
+    "<div class=\"sec\"><div class=\"lbl\">Updates</div><div class=\"card ver\"><div><b>" + esc(S.cfg.name) + " " + esc(S.version || "") + "</b><div class=\"muted\">" + ut + "</div></div>" + ub + "</div></div>" +
     "<div class=\"sec\"><div class=\"row\"><button class=\"chip\" id=\"wl\">Show welcome</button><button class=\"chip\" id=\"rs\">" + (armed.reset ? "Click again to reset" : "Reset settings") + "</button></div></div>";
   drawIcon();
   $("nm").onchange = function(e){ set({ name: e.target.value.trim() || "Expecct" }); };
@@ -646,7 +690,7 @@ function drawWelcome(){
 /* ---------- events ---------- */
 window.exacct.on("state", function(s){ S = s; render(); });
 window.exacct.on("history", function(h){ if (!S) return; S.history = h; if (open && tab === "chats") renderList(); });
-window.exacct.on("nav", function(n){ $("b-back").disabled = !n.canBack; });
+window.exacct.on("nav", function(n){ $("b-back").disabled = !n.canBack; $("b-fwd").disabled = !n.canFwd; });
 window.exacct.on("loading", function(l){ document.body.classList.toggle("loading", !!l); });
 window.exacct.on("toast", toast);
 window.exacct.on("find", openFind);
