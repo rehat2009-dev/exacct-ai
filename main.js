@@ -55,7 +55,7 @@ const DEFAULTS = {
   ai: defaultAi, name: BRAND,
   size: "medium", position: "center", x: null, y: null, width: 860, height: 760,
   alwaysOnTop: false, opacity: 100, zoom: 100,
-  accent: "#0a84ff", theme: "auto", icon: null,
+  accent: "#8b5cf6", theme: "aurora", icon: null,
   hotkey: true, startup: false, closeToTray: false, resume: true, keepSignedIn: true,
   welcomed: false, mini: null, lastUrl: {},
   split: 1, ai2: null, goal: 0, goalDay: "", autoHide: false
@@ -251,10 +251,9 @@ function toggleWindow() {
 
 // ---------- light / dark ----------
 function applyTheme() {
-  const src = cfg.theme === "light" || cfg.theme === "dark" ? cfg.theme : "system";
-  if (nativeTheme.themeSource !== src) nativeTheme.themeSource = src;
-  const bg = nativeTheme.shouldUseDarkColors ? "#1c1c1e" : "#f5f5f7";
-  if (win && !win.isDestroyed() && !isMac) win.setBackgroundColor(bg);
+  if (nativeTheme.themeSource !== "dark") nativeTheme.themeSource = "dark";
+  const bg = "#09090b";
+  if (win && !win.isDestroyed()) win.setBackgroundColor(bg);
   for (const k of AI_KEYS) if (views[k]) views[k].setBackgroundColor(bg);
   if (win && !win.isDestroyed() && lastDark !== nativeTheme.shouldUseDarkColors) { lastDark = nativeTheme.shouldUseDarkColors; send("state", publicState()); }
 }
@@ -343,7 +342,7 @@ function contextMenu(wc, p) {
 function getView(ai) {
   if (views[ai]) return views[ai];
   const v = new WebContentsView({ webPreferences: { partition: "persist:exacct", contextIsolation: true, sandbox: true, backgroundThrottling: false } });
-  v.setBackgroundColor(nativeTheme.shouldUseDarkColors ? "#1c1c1e" : "#f5f5f7");
+  v.setBackgroundColor("#09090b");
   v.setVisible(false);
   win.contentView.addChildView(v);
   const wc = v.webContents;
@@ -757,9 +756,8 @@ function createWindow() {
   win = new BrowserWindow({
     width: 860, height: 760, minWidth: 360, minHeight: 420, show: false,
     frame: isMac, titleBarStyle: isMac ? "hiddenInset" : undefined,
-    trafficLightPosition: { x: 16, y: 15 },
-    ...(isMac ? { vibrancy: "sidebar", visualEffectState: "active", backgroundColor: "#00000000" }
-              : { backgroundColor: nativeTheme.shouldUseDarkColors ? "#1c1c1e" : "#f5f5f7" }),
+    trafficLightPosition: { x: 16, y: 18 },
+    backgroundColor: "#09090b",
     title: cfg.name,
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, sandbox: true }
   });
@@ -810,8 +808,8 @@ else {
     data = { history: [], stats: {}, prompts: DEFAULT_PROMPTS, ...readJson("data.json", {}) };
     if (!AIS[cfg.ai]) cfg.ai = defaultAi;
     if (!cfg.name || cfg.name === "Exacct AI") cfg.name = BRAND;
-    if (!["auto", "light", "dark"].includes(cfg.theme)) cfg.theme = "auto";
-    if (cfg.accent === "#8b5cf6") cfg.accent = DEFAULTS.accent;
+    if (!["aurora", "midnight", "black"].includes(cfg.theme)) cfg.theme = "aurora";
+    if (cfg.accent === "#0a84ff") cfg.accent = DEFAULTS.accent;
     applyTheme();
     nativeTheme.on("updated", applyTheme);
     const ses = keepCookies();
