@@ -1,8 +1,10 @@
-// Exacct AI 2 - your AI in its own window
+// Expecct 3 - your AI in its own window
 const { app, BrowserWindow, WebContentsView, ipcMain, screen, Tray, Menu, nativeImage,
         globalShortcut, shell, dialog, session, clipboard, net, Notification } = require("electron");
 const path = require("path");
 const fs = require("fs");
+const crypto = require("crypto");
+const { spawn, execFile } = require("child_process");
 const pkg = require("./package.json");
 
 const AIS = {
@@ -11,17 +13,42 @@ const AIS = {
   gemini:  { label: "Gemini",  color: "#4f8cff", url: "https://gemini.google.com/app", hosts: ["gemini.google.com"], chat: /^\/app\/\w+/ }
 };
 const AI_KEYS = Object.keys(AIS);
+const isMac = process.platform === "darwin";
 const TOP = 44, DRAWER = 340, COLH = 30, ASKH = 54;
 const railW = w => (w < 520 ? 52 : 68);
 const SITE = "https://rehat2009-dev.github.io/exacct-ai/";
+const REL = process.env.EXPECCT_REL || "https://github.com/rehat2009-dev/exacct-ai/releases/download/latest/";
+const BRAND = "Expecct";
 const HOTKEY = "CommandOrControl+Shift+Space";
-const isMac = process.platform === "darwin";
 const FIXED = { mini: [380, 580], small: [460, 700], medium: [860, 760], large: [1200, 860], xl: [1500, 960] };
 const SIZE_NAMES = { mini: "Mini", small: "Small", medium: "Medium", large: "Large", xl: "Extra large", focus: "Focus", tall: "Tall side", left: "Left half", right: "Right half", left3: "Left third", right3: "Right third", top: "Top half", bottom: "Bottom half", full: "Full screen", custom: "Custom" };
 
 const defaultAi = AIS[pkg.exacctAi] ? pkg.exacctAi : "chatgpt";
+
+// keep settings and sign-ins from the old "Exacct AI" app
+if (process.env.EXPECCT_DATA) app.setPath("userData", process.env.EXPECCT_DATA);
+else {
+  const old = path.join(app.getPath("appData"), "Exacct AI " + AIS[defaultAi].label);
+  if (app.isPackaged && fs.existsSync(old)) app.setPath("userData", old);
+}
+
+// look like a normal browser so sign-in pages work
+const CHROME_MAJOR = String(process.versions.chrome || "130").split(".")[0];
+const OS_PART = isMac ? "Macintosh; Intel Mac OS X 10_15_7" : process.platform === "win32" ? "Windows NT 10.0; Win64; x64" : "X11; Linux x86_64";
+const CHROME_UA = "Mozilla/5.0 (" + OS_PART + ") AppleWebKit/537.36 (KHTML, like Gecko) Chrome/" + CHROME_MAJOR + ".0.0.0 Safari/537.36";
+// Google blocks sign-in from apps that look like Chrome, so its sign-in page gets a Firefox look
+const GOOGLE_UA = "Mozilla/5.0 (" + (isMac ? "Macintosh; Intel Mac OS X 10.15" : process.platform === "win32" ? "Windows NT 10.0; Win64; x64" : "X11; Linux x86_64") + "; rv:140.0) Gecko/20100101 Firefox/140.0";
+const isGoogleLogin = url => { try { return new URL(url).hostname === "accounts.google.com"; } catch { return false; } };
+app.userAgentFallback = CHROME_UA;
+
+// who is signed in (checked from cookies)
+const AUTH = {
+  chatgpt: { check: "https://chatgpt.com/", ok: c => c.name.startsWith("__Secure-next-auth.session-token"), login: "https://chatgpt.com/auth/login", domains: ["chatgpt.com", "openai.com"] },
+  claude: { check: "https://claude.ai/", ok: c => c.name === "sessionKey", login: "https://claude.ai/login", domains: ["claude.ai", "anthropic.com"] },
+  gemini: { check: "https://gemini.google.com/", ok: c => ["SID", "__Secure-1PSID", "__Secure-3PSID"].includes(c.name), login: "https://accounts.google.com/ServiceLogin?continue=" + encodeURIComponent("https://gemini.google.com/app"), domains: ["google.com"] }
+};
 const DEFAULTS = {
-  ai: defaultAi, name: "Exacct AI",
+  ai: defaultAi, name: BRAND,
   size: "medium", position: "center", x: null, y: null, width: 860, height: 760,
   alwaysOnTop: false, opacity: 100, zoom: 100,
   accent: "#8b5cf6", theme: "aurora", icon: null,
@@ -53,9 +80,10 @@ const saveData = () => later("data", () => writeJson("data.json", data));
 let win, tray;
 const views = {};
 const ui = { drawer: false, welcome: false, ask: false };
-let placing = false, focused = null, update = null, dialogOpen = false;
+let placing = false, focused = null, dialogOpen = false, findText = "";
+let upd = null, updFile = null, updApp = null, signed = {};
 
-const UA = () => app.userAgentFallback.replace(/\sElectron\/\S+/, "").replace(/\sexacct-ai\/\S+/i, "");
+const UA = () => CHROME_UA;
 const send = (ch, d) => { if (win && !win.isDestroyed()) win.webContents.send(ch, d); };
 const toast = t => send("toast", t);
 const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
@@ -67,7 +95,7 @@ function publicState() {
     cfg, isMac, hotkeyLabel: isMac ? "⌘ ⇧ Space" : "Ctrl + Shift + Space",
     ais: AI_KEYS.map(k => ({ id: k, label: AIS[k].label, color: AIS[k].color })),
     sizeNames: SIZE_NAMES, history: data.history, stats: data.stats, prompts: data.prompts,
-    focused: focused || cfg.ai, cols: visibleAIs(), update
+    focused: focused || cfg.ai, cols: visibleAIs(), update: upd, signed, version: pkg.version
   };
 }
 
@@ -214,6 +242,58 @@ function record(ai, wc) {
   saveData(); send("history", data.history);
 }
 
+const LOGIN_HOSTS = ["accounts.google.com", "login.microsoftonline.com", "login.live.com", "appleid.apple.com", "auth.openai.com", "auth0.openai.com"];
+const openExt = url => { if (/^(https?|mailto):/i.test(url)) shell.openExternal(url); };
+
+// shared setup for AI pages and their sign-in popups
+function setupContents(wc, ai) {
+  wc.setUserAgent(UA());
+  wc.on("did-start-navigation", (e, url, inPlace, isMain) => {
+    const u = e.url || url, main = e.isMainFrame !== undefined ? e.isMainFrame : isMain;
+    if (main && !(e.isSameDocument || inPlace)) wc.setUserAgent(isGoogleLogin(u) ? GOOGLE_UA : UA());
+  });
+  wc.setWindowOpenHandler(({ url }) => {
+    let h = ""; try { h = new URL(url).hostname; } catch {}
+    const login = LOGIN_HOSTS.some(d => h === d || h.endsWith("." + d));
+    if (login || onHost(ai, url)) return { action: "allow", overrideBrowserWindowOptions: { width: 520, height: 700, autoHideMenuBar: true, backgroundColor: "#ffffff", webPreferences: { partition: "persist:exacct" } } };
+    openExt(url); return { action: "deny" };
+  });
+  wc.on("did-create-window", child => {
+    child.setMenuBarVisibility(false);
+    setupContents(child.webContents, ai);
+    child.on("closed", () => later("authcheck", checkAuth, 800));
+  });
+  wc.on("before-input-event", onKeys);
+  wc.on("context-menu", (_e, p) => contextMenu(wc, p));
+}
+
+function contextMenu(wc, p) {
+  const t = [], sel = String(p.selectionText || "").trim(), sep = { type: "separator" };
+  if (p.misspelledWord && p.dictionarySuggestions && p.dictionarySuggestions.length) {
+    p.dictionarySuggestions.slice(0, 5).forEach(s => t.push({ label: s, click: () => wc.replaceMisspelling(s) }));
+    t.push(sep);
+  }
+  if (p.linkURL) t.push({ label: "Open link in browser", click: () => openExt(p.linkURL) }, { label: "Copy link", click: () => clipboard.writeText(p.linkURL) }, sep);
+  if (p.mediaType === "image" && p.srcURL) t.push({ label: "Copy image", click: () => wc.copyImageAt(p.x, p.y) }, { label: "Save image", click: () => wc.downloadURL(p.srcURL) }, sep);
+  if (p.isEditable) {
+    const f = p.editFlags || {};
+    t.push({ label: "Cut", enabled: !!f.canCut, click: () => wc.cut() }, { label: "Copy", enabled: !!f.canCopy, click: () => wc.copy() },
+      { label: "Paste", enabled: !!f.canPaste, click: () => wc.paste() }, { label: "Select all", click: () => wc.selectAll() });
+  } else if (sel) t.push({ label: "Copy", click: () => wc.copy() });
+  if (sel) {
+    const q = sel.slice(0, 4000);
+    t.push(sep, { label: "Ask about this", submenu: [
+      ...AI_KEYS.map(k => ({ label: AIS[k].label, click: () => askOne(k, q) })), sep,
+      { label: "All 3 at once", click: () => askAll(q) }] });
+  }
+  if (!t.length) {
+    t.push({ label: "Back", enabled: wc.navigationHistory.canGoBack(), click: () => wc.navigationHistory.goBack() },
+      { label: "Reload", click: () => wc.reload() }, sep, { label: "New chat", click: () => H.act("home") });
+  }
+  while (t.length && t[t.length - 1].type === "separator") t.pop();
+  Menu.buildFromTemplate(t).popup({ window: win });
+}
+
 function getView(ai) {
   if (views[ai]) return views[ai];
   const v = new WebContentsView({ webPreferences: { partition: "persist:exacct", contextIsolation: true, sandbox: true, backgroundThrottling: false } });
@@ -221,13 +301,8 @@ function getView(ai) {
   v.setVisible(false);
   win.contentView.addChildView(v);
   const wc = v.webContents;
-  wc.setUserAgent(UA());
-  wc.setWindowOpenHandler(({ url }) => {
-    let h = ""; try { h = new URL(url).hostname; } catch {}
-    const login = ["accounts.google.com", "login.microsoftonline.com", "appleid.apple.com", "auth.openai.com", "auth0.openai.com"].some(d => h === d || h.endsWith("." + d));
-    if (login || onHost(ai, url)) return { action: "allow", overrideBrowserWindowOptions: { autoHideMenuBar: true, webPreferences: { partition: "persist:exacct" } } };
-    shell.openExternal(url); return { action: "deny" };
-  });
+  setupContents(wc, ai);
+  wc.on("found-in-page", (_e, r) => { if (r.finalUpdate) send("found", { active: r.activeMatchOrdinal, total: r.matches }); });
   const nav = () => { if (ai === cfg.ai) send("nav", { canBack: wc.navigationHistory.canGoBack() }); record(ai, wc); };
   wc.on("did-navigate", nav);
   wc.on("did-navigate-in-page", nav);
@@ -235,8 +310,7 @@ function getView(ai) {
   wc.on("did-start-loading", () => { if (ai === cfg.ai) send("loading", true); });
   wc.on("did-stop-loading", () => { if (ai === cfg.ai) send("loading", false); });
   wc.on("did-finish-load", () => wc.setZoomFactor(cfg.zoom / 100));
-  wc.on("before-input-event", onKeys);
-  wc.on("focus", () => { if (focused !== ai) { focused = ai; send("state", publicState()); layout(); } });
+  wc.on("focus",() => { if (focused !== ai) { focused = ai; send("state", publicState()); layout(); } });
   const last = cfg.resume && cfg.lastUrl[ai];
   wc.loadURL(last && onHost(ai, last) ? last : AIS[ai].url, { userAgent: UA() });
   views[ai] = v;
@@ -324,6 +398,12 @@ function sendTo(ai, text) {
   });
 }
 
+async function askOne(ai, text) {
+  if (!visibleAIs().includes(ai)) switchAI(ai); else { focused = ai; send("state", publicState()); }
+  const r = await sendTo(ai, text);
+  if (!r) toast("Sign in to " + AIS[ai].label + " first");
+}
+
 async function askAll(text) {
   text = String(text || "").trim();
   if (!text) return;
@@ -364,6 +444,7 @@ function onKeys(e, input) {
   if (!mod) return;
   if (!input.shift && !input.alt && k === "r") { stop(); H.act("reload"); return; }
   if (!input.shift && !input.alt && k === "n") { stop(); H.act("home"); toast("New chat"); return; }
+  if (!input.shift && !input.alt && k === "f") { stop(); send("find", true); if (win) win.webContents.focus(); return; }
   if (input.alt) {
     const snap = { arrowleft: "left", arrowright: "right", arrowup: "full" }[k];
     if (snap) { stop(); H.set({ size: snap }); }
@@ -397,6 +478,72 @@ function keepCookies() {
   return ses;
 }
 
+// ---------- sign in / out ----------
+const ses = () => session.fromPartition("persist:exacct");
+async function checkAuth() {
+  const next = {};
+  for (const k of AI_KEYS) {
+    try { next[k] = (await ses().cookies.get({ url: AUTH[k].check })).some(AUTH[k].ok); } catch { next[k] = null; }
+  }
+  if (JSON.stringify(next) !== JSON.stringify(signed)) { signed = next; send("state", publicState()); }
+}
+function signIn(ai) {
+  if (!AIS[ai]) return;
+  switchAI(ai);
+  views[ai].webContents.loadURL(AUTH[ai].login).catch(() => {});
+}
+async function signOut(ai) {
+  if (!AIS[ai]) return;
+  const s = ses();
+  const all = await s.cookies.get({});
+  for (const c of all) {
+    const d = String(c.domain || "").replace(/^\./, "");
+    if (AUTH[ai].domains.some(x => d === x || d.endsWith("." + x)))
+      await s.cookies.remove((c.secure ? "https://" : "http://") + d + (c.path || "/"), c.name).catch(() => {});
+  }
+  await s.clearStorageData({ origin: new URL(AIS[ai].url).origin, storages: ["localstorage", "indexdb", "serviceworkers", "cachestorage"] }).catch(() => {});
+  delete cfg.lastUrl[ai]; saveCfg();
+  if (views[ai]) views[ai].webContents.loadURL(AIS[ai].url).catch(() => {});
+  await checkAuth();
+  toast("Signed out of " + AIS[ai].label);
+}
+
+// files the AI makes go straight to Downloads
+function setupDownloads(s) {
+  s.on("will-download", (_e, item) => {
+    const dir = app.getPath("downloads");
+    try { fs.mkdirSync(dir, { recursive: true }); } catch {}
+    const name = item.getFilename() || "download", ext = path.extname(name), base = path.basename(name, ext);
+    let p = path.join(dir, name), i = 1;
+    while (fs.existsSync(p)) p = path.join(dir, base + " (" + i++ + ")" + ext);
+    item.setSavePath(p);
+    toast("Downloading " + path.basename(p));
+    item.once("done", (_e2, st) => {
+      if (st === "completed") { toast("Saved in Downloads"); if (isMac && app.dock) app.dock.downloadFinished(p); }
+      else if (st !== "cancelled") toast("Download failed");
+    });
+  });
+  // microphone (voice chat), notifications and copy buttons
+  const OK = ["media", "notifications", "clipboard-read", "clipboard-sanitized-write", "fullscreen", "pointerLock"];
+  s.setPermissionRequestHandler((_wc, perm, cb) => cb(OK.includes(perm)));
+  s.setPermissionCheckHandler((_wc, perm) => OK.includes(perm));
+  s.webRequest.onBeforeSendHeaders({ urls: ["https://accounts.google.com/*"] }, (d, cb) => {
+    const h = d.requestHeaders;
+    for (const k of Object.keys(h)) if (/^user-agent$/i.test(k) || /^sec-ch-ua/i.test(k)) delete h[k];
+    h["User-Agent"] = GOOGLE_UA;
+    cb({ requestHeaders: h });
+  });
+}
+
+// ---------- find in page ----------
+function find(text, back) {
+  const wc = current(); if (!wc) return;
+  text = String(text || "");
+  if (!text) { wc.stopFindInPage("clearSelection"); findText = ""; send("found", null); return; }
+  wc.findInPage(text, { forward: !back, findNext: text !== findText });
+  findText = text;
+}
+
 // ---------- IPC ----------
 const H = {
   state: () => publicState(),
@@ -404,7 +551,7 @@ const H = {
     patch = patch || {};
     const before = { ai: cfg.ai, zoom: cfg.zoom };
     for (const k of Object.keys(patch)) if (k in DEFAULTS && k !== "lastUrl") cfg[k] = patch[k];
-    cfg.name = String(cfg.name || "Exacct AI").slice(0, 40);
+    cfg.name = String(cfg.name || BRAND).slice(0, 40);
     const place = ["size", "position", "width", "height"].some(k => k in patch);
     if (place) { cfg.mini = null; if (cfg.position === "custom" && "size" in patch) cfg.position = "center"; }
     saveCfg();
@@ -420,7 +567,16 @@ const H = {
   focusCol: ai => { if (!views[ai]) return; focused = ai; views[ai].webContents.focus(); send("state", publicState()); layout(); },
   askAll: text => askAll(text),
   pinHistory: url => { const e = data.history.find(h => h.url === url); if (e) { e.pinned = !e.pinned; saveData(); send("history", data.history); } },
-  openUpdate: () => shell.openExternal(SITE),
+  update: a => {
+    if (a === "check") return checkUpdate(true);
+    if (a === "restart" && installUpdate(true)) { app.isQuitting = true; app.quit(); return; }
+    shell.openExternal(SITE + "#download");
+  },
+  find: (text, back) => find(text, back),
+  findStop: () => { find(""); const wc = current(); if (wc) wc.focus(); },
+  signIn: ai => signIn(ai),
+  signOut: ai => signOut(ai),
+  askOne: (ai, text) => askOne(ai, String(text || "").trim()),
   act: a => {
     const wc = current();
     if (a === "back" && wc && wc.navigationHistory.canGoBack()) wc.navigationHistory.goBack();
@@ -467,11 +623,70 @@ function newer(a, b) {
   for (let i = 0; i < 3; i++) { if ((x[i] || 0) > (y[i] || 0)) return true; if ((x[i] || 0) < (y[i] || 0)) return false; }
   return false;
 }
-function checkUpdate() {
-  net.fetch("https://raw.githubusercontent.com/rehat2009-dev/exacct-ai/main/package.json", { cache: "no-store" })
-    .then(r => r.json())
-    .then(p => { if (p && newer(p.version, pkg.version)) { update = p.version; send("state", publicState()); } })
-    .catch(() => {});
+// New versions download by themselves and install when you restart (or quit) the app.
+const ASSET = process.env.EXPECCT_ASSET || { win32: "Expecct-" + AIS[defaultAi].label + "-Windows.exe", darwin: "Expecct-" + AIS[defaultAi].label + "-Mac.zip" }[process.platform];
+const sendState = () => send("state", publicState());
+function macBundle() {
+  if (!isMac) return null;
+  const b = path.resolve(process.execPath, "../../..");
+  if (!b.endsWith(".app") || b.startsWith("/Volumes/") || b.includes("/AppTranslocation/")) return null;
+  try { fs.accessSync(path.dirname(b), fs.constants.W_OK); fs.accessSync(b, fs.constants.W_OK); return b; } catch { return null; }
+}
+async function checkUpdate(manual) {
+  if (upd && ["downloading", "ready", "installing"].includes(upd.status)) { if (manual) toast(upd.status === "ready" ? "Update ready - restart" : "Downloading update"); return; }
+  try {
+    const info = await (await net.fetch(REL + "version.json", { cache: "no-store" })).json();
+    if (!info || !newer(info.version, pkg.version)) { if (manual) toast("You have the newest version"); return; }
+    if (!ASSET || (!app.isPackaged && !process.env.EXPECCT_ASSET) || (isMac && !macBundle())) { upd = { version: info.version, status: "manual" }; sendState(); return; }
+    upd = { version: info.version, status: "downloading", pct: 0 }; sendState();
+    const dir = path.join(app.getPath("temp"), "expecct-update");
+    fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });
+    const f = path.join(dir, ASSET);
+    const res = await net.fetch(REL + ASSET, { cache: "no-store" });
+    if (!res.ok || !res.body) throw new Error("http " + res.status);
+    const total = +res.headers.get("content-length") || 0, hash = crypto.createHash("sha256"), out = fs.createWriteStream(f);
+    const reader = res.body.getReader();
+    let got = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const b = Buffer.from(value); hash.update(b); got += b.length;
+      if (!out.write(b)) await new Promise(r => out.once("drain", r));
+      const pct = total ? Math.floor(got / total * 100) : 0;
+      if (pct >= upd.pct + 5) { upd.pct = pct; sendState(); }
+    }
+    await new Promise((r, j) => { out.on("error", j); out.end(r); });
+    const want = info.files && info.files[ASSET];
+    if (!want || hash.digest("hex") !== want) throw new Error("checksum");
+    if (isMac) {
+      await new Promise((r, j) => execFile("/usr/bin/ditto", ["-x", "-k", f, dir], e => e ? j(e) : r()));
+      const a = fs.readdirSync(dir).find(n => n.endsWith(".app"));
+      if (!a) throw new Error("no app in zip");
+      updApp = path.join(dir, a);
+    }
+    updFile = f; upd = { version: info.version, status: "ready" }; sendState();
+    toast("Update ready - restart to use it");
+  } catch (e) {
+    console.error("update:", e && e.message);
+    if (upd && upd.status === "downloading") { upd = { version: upd.version, status: "manual" }; sendState(); }
+    if (manual) toast("Could not update right now");
+  }
+}
+function installUpdate(relaunch) {
+  if (!upd || upd.status !== "ready") return false;
+  try {
+    if (process.platform === "win32") {
+      spawn(updFile, ["--updated", "/S"].concat(relaunch ? ["--force-run"] : []), { detached: true, stdio: "ignore" }).unref();
+    } else if (isMac) {
+      const b = macBundle(); if (!b || !updApp) return false;
+      const script = 'while kill -0 "$PID" 2>/dev/null; do sleep 0.3; done; ' +
+        'if mv "$OLD" "$OLD.old"; then if mv "$NEW" "$OLD"; then rm -rf "$OLD.old"; else mv "$OLD.old" "$OLD"; fi; fi; ' +
+        'xattr -dr com.apple.quarantine "$OLD" 2>/dev/null; if [ "$RUN" = 1 ]; then open "$OLD"; fi';
+      spawn("/bin/sh", ["-c", script], { detached: true, stdio: "ignore", env: { ...process.env, PID: String(process.pid), OLD: b, NEW: updApp, RUN: relaunch ? "1" : "0" } }).unref();
+    } else return false;
+  } catch (e) { console.error(e); return false; }
+  upd.status = "installing";
+  return true;
 }
 
 // ---------- tray ----------
@@ -486,6 +701,7 @@ function buildTray() {
     { label: "Mini mode", type: "checkbox", checked: !!cfg.mini, click: toggleMini },
     { label: "Keep on top", type: "checkbox", checked: !!cfg.alwaysOnTop, click: () => H.act("pin") },
     { type: "separator" },
+    { label: "Check for updates", click: () => checkUpdate(true) },
     { label: "Quit", click: () => { app.isQuitting = true; app.quit(); } }
   ]));
 }
@@ -531,13 +747,18 @@ else {
     cfg.lastUrl = cfg.lastUrl || {};
     data = { history: [], stats: {}, prompts: DEFAULT_PROMPTS, ...readJson("data.json", {}) };
     if (!AIS[cfg.ai]) cfg.ai = defaultAi;
+    if (!cfg.name || cfg.name === "Exacct AI") cfg.name = BRAND;
     const ses = keepCookies();
+    setupDownloads(ses);
+    ses.cookies.on("changed", () => later("authcheck", checkAuth, 1200));
     tray = new Tray(iconImage(isMac ? 18 : 16));
     tray.setToolTip(cfg.name);
     tray.on("click", toggleWindow);
     buildTray();
     createWindow();
-    setTimeout(checkUpdate, 6000);
+    checkAuth();
+    setTimeout(() => checkUpdate(false), 8000);
+    setInterval(() => checkUpdate(false), 4 * 60 * 60 * 1000);
     // time used: counts 15 s at a time while the window is in front
     setInterval(() => {
       if (!win || win.isDestroyed() || !win.isVisible() || !win.isFocused()) return;
@@ -560,6 +781,7 @@ else {
     }, 15000);
     app.on("before-quit", () => {
       app.isQuitting = true;
+      if (upd && upd.status === "ready") installUpdate(false);
       writeJson("settings.json", cfg); writeJson("data.json", data);
       ses.cookies.flushStore().catch(() => {});
     });

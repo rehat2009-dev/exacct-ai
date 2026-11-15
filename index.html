@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Exacct AI</title>
+<title>Expecct</title>
 <meta name="description" content="ChatGPT, Claude and Gemini in their own window. Any size, any place, your style.">
 <link rel="icon" href="icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -150,7 +150,7 @@ footer{text-align:center;color:var(--muted);font-size:.72rem;letter-spacing:.35e
 <canvas id="stars" aria-hidden="true"></canvas>
 <div class="wrap">
   <nav>
-    <p class="logo"><img src="icon.png" alt="">Exacct</p>
+    <p class="logo"><img src="icon.png" alt="">Expecct</p>
     <a class="pill" href="#download">Download
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v9M4 7l4 4 4-4M3 14h10"/></svg></a>
   </nav>
@@ -172,7 +172,7 @@ footer{text-align:center;color:var(--muted);font-size:.72rem;letter-spacing:.35e
     <div class="studio">
       <div class="screen" id="screen2"></div>
       <div class="ctrl">
-        <input class="field" id="nm" maxlength="20" value="Exacct AI" aria-label="Name">
+        <input class="field" id="nm" maxlength="20" value="Expecct" aria-label="Name">
         <div class="row" id="accs"></div>
         <div class="row" id="shapes"></div>
       </div>
@@ -188,7 +188,7 @@ footer{text-align:center;color:var(--muted);font-size:.72rem;letter-spacing:.35e
     <div class="dlgrid" id="dlgrid"></div>
   </section>
 
-  <footer>Exacct</footer>
+  <footer>Expecct</footer>
 </div>
 
 <div class="dlhelp" id="dlhelp" hidden role="dialog" aria-modal="true" aria-labelledby="dlt">
@@ -207,7 +207,7 @@ var SIZES = [["mini","Mini",[73,52,22,40]],["small","Small",[36,16,28,64]],["med
 var ACC = ["#8b5cf6","#ec4899","#10a37f","#4f8cff","#f59e0b","#ef4444","#06b6d4","#e4e4e7"];
 var SHAPES = ["rounded","circle","squircle","diamond"];
 var AIS = [["ChatGPT","#10a37f"],["Claude","#d97757"],["Gemini","#4f8cff"]];
-var st = { name: "Exacct AI", shape: "rounded", ai: 0 };
+var st = { name: "Expecct", shape: "rounded", ai: 0 };
 function $(id){ return document.getElementById(id); }
 function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]; }); }
 
@@ -265,7 +265,7 @@ Array.prototype.forEach.call(document.querySelectorAll("[data-shape]"), function
   Array.prototype.forEach.call(document.querySelectorAll(".aicon"), function(x){ x.className = "aicon " + st.shape; });
 }; });
 $("nm").oninput = function(e){
-  st.name = e.target.value || "Exacct AI";
+  st.name = e.target.value || "Expecct";
   Array.prototype.forEach.call(document.querySelectorAll(".aname"), function(x){ x.textContent = st.name; });
   Array.prototype.forEach.call(document.querySelectorAll(".aicon b"), function(x){ x.textContent = st.name.charAt(0); });
 };
@@ -280,9 +280,13 @@ var I = {
   swap: "<path d=\"M3 5h9l-2.5-2.5M13 11H4l2.5 2.5\"/>",
   chat: "<path d=\"M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z\"/>",
   cols: "<rect x=\"1.8\" y=\"2.5\" width=\"12.4\" height=\"11\" rx=\"2\"/><path d=\"M6 2.5v11M10 2.5v11\"/>",
-  goal: "<circle cx=\"8\" cy=\"8\" r=\"6\"/><circle cx=\"8\" cy=\"8\" r=\"2.5\"/>"
+  goal: "<circle cx=\"8\" cy=\"8\" r=\"6\"/><circle cx=\"8\" cy=\"8\" r=\"2.5\"/>",
+  up: "<path d=\"M8 2.5v8M4.5 7 8 10.5 11.5 7M3 13.5h10\"/>",
+  find: "<circle cx=\"7\" cy=\"7\" r=\"4.5\"/><path d=\"m10.5 10.5 3 3\"/>",
+  mic: "<rect x=\"5.5\" y=\"1.8\" width=\"5\" height=\"8\" rx=\"2.5\"/><path d=\"M3.5 7.5a4.5 4.5 0 0 0 9 0M8 12v2.2\"/>",
+  click: "<path d=\"M3 2.5l9.5 4.2-4 1.3-1.4 4.2z\"/><path d=\"m9 9 3.5 3.5\"/>"
 };
-var FEATS = [["chat","Ask all 3"],["cols","Side by side"],["key","Stay signed in"],["swap","Switch AI fast"],["clock","Chat history"],["goal","Daily goal"],["bolt","Saved prompts"],["mini","Mini mode"]];
+var FEATS = [["chat","Ask all 3"],["cols","Side by side"],["key","Stay signed in"],["swap","Switch AI fast"],["clock","Chat history"],["goal","Daily goal"],["bolt","Saved prompts"],["mini","Mini mode"],["up","Updates itself"],["find","Find in chat"],["click","Right-click ask"],["mic","Voice chat"]];
 $("feats").innerHTML = FEATS.map(function(f){ return "<div class=\"feat\"><svg viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\">" + I[f[0]] + "</svg>" + f[1] + "</div>"; }).join("");
 
 /* downloads */
@@ -291,21 +295,25 @@ var WIN = "<svg viewBox=\"0 0 16 16\" aria-hidden=\"true\"><path fill=\"currentC
 var MAC = "<svg viewBox=\"0 0 16 16\" aria-hidden=\"true\"><path fill=\"currentColor\" d=\"M11.2 8.5c0-1.6 1.3-2.3 1.3-2.4-.7-1-1.8-1.2-2.2-1.2-.9-.1-1.8.6-2.3.6s-1.2-.5-2-.5C4.9 5 3.8 5.7 3.2 6.8c-1.2 2.1-.3 5.2.9 6.9.6.8 1.2 1.7 2.1 1.7.8 0 1.2-.5 2.2-.5s1.3.5 2.2.5c.9 0 1.5-.9 2-1.7.6-.9.9-1.8.9-1.9 0 0-1.7-.7-1.7-2.8zM9.8 3.7c.5-.6.8-1.4.7-2.2-.7 0-1.5.5-2 1.1-.4.5-.8 1.3-.7 2.1.8.1 1.5-.4 2-1z\"/></svg>";
 var tgt = TARGET ? " target=\"_blank\" rel=\"noopener\"" : "";
 $("dlgrid").innerHTML = AIS.map(function(a){
-  var w = "<a class=\"dl" + (isMac ? "" : " main") + "\" href=\"" + REL + "Exacct-AI-" + a[0] + "-Windows.exe\"" + tgt + ">" + WIN + "Windows</a>";
-  var m = "<a class=\"dl" + (isMac ? " main" : "") + "\" href=\"" + REL + "Exacct-AI-" + a[0] + "-Mac.dmg\"" + tgt + ">" + MAC + "Mac</a>";
-  return "<div class=\"dcard\" style=\"--c:" + a[1] + "\"><div class=\"dtop\"><img src=\"icon.png\" alt=\"\"><div><b>Exacct AI</b><small><i></i>" + a[0] + "</small></div></div><div class=\"dls\">" + (isMac ? m + w : w + m) + "</div></div>";
+  var w = "<a class=\"dl" + (isMac ? "" : " main") + "\" href=\"" + REL + "Expecct-" + a[0] + "-Windows.exe\"" + tgt + ">" + WIN + "Windows</a>";
+  var m = "<a class=\"dl" + (isMac ? " main" : "") + "\" href=\"" + REL + "Expecct-" + a[0] + "-Mac.dmg\"" + tgt + ">" + MAC + "Mac</a>";
+  return "<div class=\"dcard\" style=\"--c:" + a[1] + "\"><div class=\"dtop\"><img src=\"icon.png\" alt=\"\"><div><b>Expecct</b><small><i></i>" + a[0] + "</small></div></div><div class=\"dls\">" + (isMac ? m + w : w + m) + "</div></div>";
 }).join("");
 var isPhone = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (matchMedia("(pointer: coarse)").matches && innerWidth < 820);
 var PHONE = "<svg viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.7\" aria-hidden=\"true\"><rect x=\"4\" y=\"1.5\" width=\"8\" height=\"13\" rx=\"2\"/><path d=\"M7 12h2\"/></svg>";
-var phoneCard = "<div class=\"dcard\" style=\"--c:#8b5cf6\"><div class=\"dtop\"><img src=\"" + document.querySelector(".logo img").getAttribute("src") + "\" alt=\"\"><div><b>Exacct AI</b><small><i></i>Phone</small></div></div><div class=\"dls\"><a class=\"dl main\" href=\"phone/\">" + PHONE + "Open phone app</a></div></div>";
+var phoneCard = "<div class=\"dcard\" style=\"--c:#8b5cf6\"><div class=\"dtop\"><img src=\"" + document.querySelector(".logo img").getAttribute("src") + "\" alt=\"\"><div><b>Expecct</b><small><i></i>Phone</small></div></div><div class=\"dls\"><a class=\"dl main\" href=\"phone/\">" + PHONE + "Open phone app</a></div></div>";
 $("dlgrid").insertAdjacentHTML(isPhone ? "afterbegin" : "beforeend", phoneCard);
 if (isPhone) { var nb = document.querySelector("nav .pill"); nb.firstChild.textContent = "Get the app "; nb.setAttribute("href", "phone/"); Array.prototype.forEach.call(document.querySelectorAll(".dl.main"), function(x){ if (x.getAttribute("href") !== "phone/") x.classList.remove("main"); }); }
 var STEPS = {
   win: ["Open the file", "<b>More info</b> → <b>Run anyway</b>", "Done – it opens by itself"],
-  mac: ["Open the file", "Drag it to <b>Applications</b>", "Right-click → <b>Open</b>"]
+  mac: ["Open the file", "Drag it to <b>Applications</b>", "Blocked? <b>Settings → Privacy &amp; Security → Open Anyway</b>"]
 };
+/* the file comes as a download, so the page stays here */
+function startDownload(url){ window.location.assign(url); }
 document.addEventListener("click", function(e){
-  var a = e.target.closest("a.dl"); if (!a || a.getAttribute("href") === "phone/") return;
+  var a = e.target.closest("a.dl, #dlagain"); if (!a || a.getAttribute("href") === "phone/") return;
+  if (!TARGET) { e.preventDefault(); startDownload(a.href); }
+  if (a.id === "dlagain") return;
   $("dlsteps").innerHTML = STEPS[/\.dmg$/.test(a.href) ? "mac" : "win"].map(function(t){ return "<li><span>" + t + "</span></li>"; }).join("");
   $("dlagain").href = a.href; if (TARGET) { $("dlagain").target = "_blank"; $("dlagain").rel = "noopener"; }
   $("dlhelp").hidden = false;

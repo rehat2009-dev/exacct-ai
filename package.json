@@ -1,20 +1,20 @@
 {
-  "name": "exacct-ai",
-  "productName": "Exacct AI",
-  "version": "2.2.0",
-  "description": "Your AI in its own window. Pick the size, the place, the icon and the name.",
+  "name": "expecct",
+  "productName": "Expecct",
+  "version": "3.0.0",
+  "description": "Expecct - ChatGPT, Claude and Gemini in their own window. Any size, any place, your style.",
   "main": "main.js",
-  "author": "Expect",
+  "author": "Expecct",
   "license": "UNLICENSED",
   "exacctAi": "chatgpt",
   "scripts": {
     "start": "electron .",
     "dist:win": "electron-builder --win nsis --x64 --publish never",
-    "dist:mac": "electron-builder --mac dmg --universal --publish never"
+    "dist:mac": "electron-builder --mac dmg zip --universal --publish never"
   },
   "devDependencies": {
-    "electron": "33.2.1",
-    "electron-builder": "25.1.8"
+    "electron": "45.2.1",
+    "electron-builder": "26.18.0"
   },
   "build": {
     "appId": "no.expect.exacctai",
@@ -39,15 +39,23 @@
       "runAfterFinish": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "deleteAppDataOnUninstall": false
+      "deleteAppDataOnUninstall": false,
+      "shortcutName": "${productName}"
     },
     "mac": {
-      "target": "dmg",
+      "target": [
+        "dmg",
+        "zip"
+      ],
       "category": "public.app-category.productivity",
-      "identity": "-"
+      "identity": "-",
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "Expecct uses the microphone when you talk to your AI.",
+        "NSCameraUsageDescription": "Expecct uses the camera when you share a photo with your AI."
+      }
     },
     "dmg": {
-      "title": "Exacct AI",
+      "title": "Expecct",
       "contents": [
         {
           "x": 150,

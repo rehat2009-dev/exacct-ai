@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'">
-<title>Exacct AI</title>
+<title>Expecct</title>
 <style>
 :root{--bg:#0a0a0d;--rail:#0f0f13;--panel:#111116;--card:#17171d;--card2:#1e1e26;--fg:#f2f2f5;--muted:#8a8a96;--line:rgba(255,255,255,.07);--accent:#8b5cf6;--pink:#ec4899;--gold:#d6a35c;--top:44px;--railw:68px}
 @media (max-width:519px){:root{--railw:52px}}
@@ -36,6 +36,24 @@ svg{width:18px;height:18px;flex:none}
 .newchat:hover{box-shadow:0 6px 20px color-mix(in srgb,var(--accent) 45%,transparent)}
 .newchat:active{transform:scale(.95)}
 .newchat svg{width:14px;height:14px}
+.pill2{display:flex;align-items:center;gap:6px;height:30px;border-radius:999px;padding:0 13px;margin:0 2px;font-weight:700;font-size:12.5px;white-space:nowrap;border:1px solid rgba(255,255,255,.18);background:transparent;transition:background .15s,transform .15s}
+.pill2:hover{background:rgba(255,255,255,.08)}
+.pill2:active{transform:scale(.95)}
+.pill2.up{border:0;background:linear-gradient(135deg,var(--accent),var(--pink));color:#fff;box-shadow:0 6px 18px color-mix(in srgb,var(--accent) 40%,transparent)}
+.pill2 i{width:7px;height:7px;border-radius:50%;background:var(--gold)}
+.find{display:flex;align-items:center;gap:2px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:0 2px 0 10px;height:32px;margin-right:4px;animation:up .2s ease both}
+.find input{width:150px;border:0;background:none;outline:none;font-size:13px}
+.find span{font-size:11.5px;color:var(--muted);min-width:34px;text-align:right;margin-right:2px}
+.find .tb{width:26px;height:26px}
+.ri .so{position:absolute;right:10px;top:5px;width:9px;height:9px;border-radius:50%;background:var(--gold);border:2px solid var(--rail)}
+.acc{display:flex;align-items:center;gap:10px;padding:8px 0}
+.acc+.acc{border-top:1px solid var(--line)}
+.acc .aic{opacity:1;width:28px;height:28px;font-size:10.5px}
+.acc .an{flex:1;min-width:0;font-weight:700}
+.acc .an small{display:block;font-weight:600;font-size:11.5px;color:var(--muted)}
+.acc .an small.ok{color:#4ade80}
+.ver{display:flex;align-items:center;justify-content:space-between;gap:10px}
+@media (max-width:700px){.pill2 span{display:none}.pill2{padding:0 10px}.find input{width:90px}}
 .sep{width:1px;height:18px;background:var(--line);margin:0 4px}
 .tb.close:hover{background:#e5484d;color:#fff}
 .mac .win{display:none!important}
@@ -195,8 +213,11 @@ kbd{font:600 11px/1 system-ui,sans-serif;background:var(--card2);border:1px soli
 </head>
 <body class="t-aurora">
 <header class="top">
-  <div class="id"><img id="icon" alt=""><span class="name" id="name">Exacct AI</span><span class="crumb" id="crumb"></span></div>
+  <div class="id"><img id="icon" alt=""><span class="name" id="name">Expecct</span><span class="crumb" id="crumb"></span></div>
   <div class="tools">
+    <div class="find" id="find" hidden><input id="findIn" placeholder="Find in page" autocomplete="off"><span id="findN"></span><button class="tb" id="f-prev" title="Previous (Shift + Enter)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 10 4-4 4 4"/></svg></button><button class="tb" id="f-next" title="Next (Enter)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 6 4 4 4-4"/></svg></button><button class="tb" id="f-x" title="Close (Esc)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m4 4 8 8M12 4l-8 8"/></svg></button></div>
+    <button class="pill2 up" id="b-update" hidden title="A new version is ready"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5v8M4.5 7 8 10.5 11.5 7M3 13.5h10"/></svg><span id="b-updateT">Restart to update</span></button>
+    <button class="pill2" id="b-signin" hidden title="Sign in"><i></i><span>Sign in</span></button>
     <button class="tb hs" id="b-back" title="Back (Alt + ←)" disabled><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg></button>
     <button class="tb hs" id="b-reload" title="Reload (Ctrl + R)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 8a5 5 0 1 1-1.5-3.6M13 2.5V5h-2.5"/></svg></button>
     <button class="newchat" id="b-new" title="New chat (Ctrl + N)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg><span>New chat</span></button>
@@ -210,7 +231,7 @@ kbd{font:600 11px/1 system-ui,sans-serif;background:var(--card2);border:1px soli
 <div class="toast" id="toast"></div>
 <div class="loadbar"><i></i></div>
 
-<nav class="rail" id="rail" aria-label="Exacct AI">
+<nav class="rail" id="rail" aria-label="Expecct">
   <div id="aiList" style="display:flex;flex-direction:column;align-items:center;gap:4px"></div>
   <div class="rsep"></div>
   <button class="ri" id="r-ask" title="Ask all 3 at once"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z"/><path d="M5.5 7h.01M8 7h.01M10.5 7h.01"/></svg><span>Ask all</span></button>
@@ -219,7 +240,7 @@ kbd{font:600 11px/1 system-ui,sans-serif;background:var(--card2);border:1px soli
   <button class="ri" data-panel="chats" title="Chats and time used"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.3 1.5"/></svg><span>Chats</span></button>
   <button class="ri" data-panel="prompts" title="Saved prompts"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M9 1.5 3.5 9H8l-1 5.5L12.5 7H8z"/></svg><span>Prompts</span></button>
   <button class="ri" data-panel="layout" title="Size and place"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="1.8" y="2.5" width="12.4" height="11" rx="2"/><path d="M8 2.5v11M8 8h6.2"/></svg><span>Size</span></button>
-  <button class="ri" data-panel="style" title="Name, icon and colour"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5l1.6 3.9 4 .3-3.1 2.6 1 4L8 10.1 4.5 12.3l1-4L2.4 5.7l4-.3z"/></svg><span>Style</span></button>
+  <button class="ri" data-panel="style" title="Sign in, style and settings"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5l1.6 3.9 4 .3-3.1 2.6 1 4L8 10.1 4.5 12.3l1-4L2.4 5.7l4-.3z"/></svg><span>Settings</span><b class="badge" id="setN" hidden>!</b></button>
 </nav>
 
 <div class="stage"><img id="stageIcon" alt=""></div>
@@ -237,7 +258,7 @@ kbd{font:600 11px/1 system-ui,sans-serif;background:var(--card2);border:1px soli
 var S = null, tab = "chats", open = false, q = "", armed = {}, askOpen = false, adding = false;
 var COLS = { cols: [], top: 44, left: 68, focused: null };
 var ic = { col: 0, shape: "Rounded", glyph: "" };
-var TITLES = { chats: "Chats", prompts: "Prompts", layout: "Size", style: "Style" };
+var TITLES = { chats: "Chats", prompts: "Prompts", layout: "Size", style: "Settings" };
 var SHORT = { chatgpt: "Gp", claude: "Cl", gemini: "Ge" };
 var COLORS = [["#8b5cf6","#ec4899"],["#10a37f","#0b6e56"],["#d97757","#b4533a"],["#4f8cff","#a855f7"],["#06b6d4","#2563eb"],["#f59e0b","#ef4444"],["#22c55e","#0ea5e9"],["#3f3f46","#09090b"],["#e11d48","#7c3aed"],["#eab308","#f97316"]];
 var ACCENTS = ["#8b5cf6","#ec4899","#10a37f","#d97757","#4f8cff","#06b6d4","#f59e0b","#ef4444","#22c55e","#e4e4e7"];
@@ -278,10 +299,20 @@ function render(){
       list.appendChild(b);
     });
   }
+  var sg = S.signed || {};
   each(".ri.ai", list, function(b){
     b.classList.toggle("on", b.dataset.ai === cur);
     b.classList.toggle("vis", vis.length > 1 && vis.indexOf(b.dataset.ai) > -1);
+    var out = sg[b.dataset.ai] === false, dot = b.querySelector(".so");
+    if (out && !dot) b.insertAdjacentHTML("beforeend", "<b class=\"so\" title=\"Not signed in\"></b>");
+    if (!out && dot) dot.remove();
   });
+  $("b-signin").hidden = sg[cur] !== false;
+  $("b-signin").title = "Sign in to " + a.label;
+  var u = S.update;
+  $("b-update").hidden = !u || (u.status !== "ready" && u.status !== "manual");
+  $("b-updateT").textContent = u && u.status === "manual" ? "New version" : "Restart to update";
+  $("setN").hidden = !u || u.status !== "manual";
   $("r-split").classList.toggle("on", c.split > 1);
   $("splitN").hidden = c.split < 2; $("splitN").textContent = c.split;
   $("r-ask").classList.toggle("on", askOpen);
@@ -298,6 +329,20 @@ $("b-mini").onclick = function(){ call("act", "mini"); };
 $("b-min").onclick = function(){ call("act", "min"); };
 $("b-max").onclick = function(){ call("act", "max"); };
 $("b-close").onclick = function(){ call("act", "close"); };
+$("b-signin").onclick = function(){ call("signIn", S.focused || S.cfg.ai); };
+$("b-update").onclick = function(){ if (S.update && S.update.status === "ready") toast("Updating..."); call("update", S.update && S.update.status === "ready" ? "restart" : "open"); };
+
+/* ---------- find in page ---------- */
+function openFind(){ $("find").hidden = false; $("findIn").focus(); $("findIn").select(); }
+function closeFind(){ $("find").hidden = true; $("findN").textContent = ""; call("findStop"); }
+$("findIn").oninput = function(e){ call("find", e.target.value); };
+$("findIn").onkeydown = function(e){
+  if (e.key === "Enter") { e.preventDefault(); call("find", $("findIn").value, e.shiftKey); }
+  if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closeFind(); }
+};
+$("f-next").onclick = function(){ call("find", $("findIn").value); };
+$("f-prev").onclick = function(){ call("find", $("findIn").value, true); };
+$("f-x").onclick = closeFind;
 
 /* ---------- ask all ---------- */
 $("r-ask").onclick = function(){ toggleAsk(); };
@@ -339,7 +384,9 @@ function togglePanel(t){ if (open && tab === t) closePanel(); else openPanel(t);
 function openPanel(t){ tab = t || tab; open = true; $("panel").classList.add("open"); call("ui", { drawer: true }); render(); }
 function closePanel(){ open = false; $("panel").classList.remove("open"); call("ui", { drawer: false }); render(); }
 $("p-close").onclick = closePanel;
-document.addEventListener("keydown", function(e){ if (e.key === "Escape") { if (open) closePanel(); else if (askOpen) toggleAsk(false); } });
+document.addEventListener("keydown", function(e){
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "f") { e.preventDefault(); openFind(); return; }
+  if (e.key === "Escape") { if (open) closePanel(); else if (askOpen) toggleAsk(false); } });
 function renderPanel(){
   $("ptitle").textContent = TITLES[tab];
   var body = $("pbody");
@@ -495,8 +542,17 @@ function drawIcon(){
 }
 function renderStyle(){
   var c = S.cfg, body = $("pbody"), m = mod(), ms = S.isMac ? "⌘ ⇧" : "Ctrl Shift", ma = S.isMac ? "⌘ ⌥" : "Ctrl Alt";
-  var keys = [["Switch AI", m + " 1 / 2 / 3"], ["New chat", m + " N"], ["Show / hide app", S.hotkeyLabel], ["Chats", ms + " H"], ["Size", ms + " L"], ["Mini mode", ma + " ↓"], ["Left / right half", ma + " ← / →"], ["Full screen", ma + " ↑"], ["Text size", m + " + / −"]];
+  var keys = [["Switch AI", m + " 1 / 2 / 3"], ["New chat", m + " N"], ["Find in page", m + " F"], ["Show / hide app", S.hotkeyLabel], ["Chats", ms + " H"], ["Size", ms + " L"], ["Mini mode", ma + " ↓"], ["Left / right half", ma + " ← / →"], ["Full screen", ma + " ↑"], ["Text size", m + " + / −"]];
+  var sg = S.signed || {}, u = S.update;
+  var accs = S.ais.map(function(a){
+    var st = sg[a.id], txt = st ? "Signed in" : st === false ? "Not signed in" : "Checking...";
+    var btn = st ? "<button class=\"chip\" data-out=\"" + a.id + "\">" + (armed["out" + a.id] ? "Sure?" : "Sign out") + "</button>" : "<button class=\"chip white\" data-in=\"" + a.id + "\">Sign in</button>";
+    return "<div class=\"acc\"><i class=\"aic\" style=\"--c:" + a.color + "\">" + SHORT[a.id] + "</i><div class=\"an\">" + a.label + "<small class=\"" + (st ? "ok" : "") + "\">" + txt + "</small></div>" + btn + "</div>";
+  }).join("");
+  var ut = !u ? "You have the newest version" : u.status === "downloading" ? "Downloading " + u.version + "... " + (u.pct || 0) + "%" : u.status === "ready" ? "Version " + u.version + " is ready" : u.status === "manual" ? "Version " + u.version + " is out" : "Updating...";
+  var ub = u && u.status === "ready" ? "<button class=\"chip white\" id=\"upR\">Restart</button>" : u && u.status === "manual" ? "<button class=\"chip white\" id=\"upO\">Get it</button>" : "<button class=\"chip\" id=\"upC\">Check</button>";
   body.innerHTML =
+    "<div class=\"sec\"><div class=\"lbl\">Accounts</div><div class=\"card\" style=\"padding:6px 14px\">" + accs + "</div><div class=\"muted\">Google sign-in blocked? Use <b>Continue with email</b> instead.</div></div>" +
     "<div class=\"sec\"><div class=\"lbl\">Name</div><input class=\"field\" id=\"nm\" maxlength=\"40\" value=\"" + esc(c.name) + "\"></div>" +
     "<div class=\"sec\"><div class=\"lbl\">Colour</div><div class=\"row\">" + ACCENTS.map(function(a){ return "<button class=\"sw" + (c.accent === a ? " on" : "") + "\" data-acc=\"" + a + "\" style=\"background:" + a + "\" aria-label=\"Colour\"></button>"; }).join("") + "</div></div>" +
     "<div class=\"sec\"><div class=\"lbl\">Look</div><div class=\"seg\">" + [["aurora","Aurora"],["midnight","Midnight"],["black","Black"]].map(function(t){ return "<button class=\"" + (c.theme === t[0] ? "on" : "") + "\" data-theme=\"" + t[0] + "\">" + t[1] + "</button>"; }).join("") + "</div></div>" +
@@ -510,9 +566,10 @@ function renderStyle(){
       toggle("startup", "Start with computer") + toggle("closeToTray", "Keep running when closed") +
     "</div></div>" +
     "<div class=\"sec\"><div class=\"lbl\">Shortcuts</div><div class=\"keys\">" + keys.map(function(k){ return "<span>" + k[0] + "</span><kbd>" + k[1] + "</kbd>"; }).join("") + "</div></div>" +
+    "<div class=\"sec\"><div class=\"lbl\">Updates</div><div class=\"card ver\"><div><b>" + esc(S.cfg.name) + " " + esc(S.version || "") + "</b><div class=\"muted\">" + ut + "</div></div>" + ub + "</div><div class=\"muted\">New versions install by themselves.</div></div>" +
     "<div class=\"sec\"><div class=\"row\"><button class=\"chip\" id=\"wl\">Show welcome</button><button class=\"chip\" id=\"rs\">" + (armed.reset ? "Click again to reset" : "Reset settings") + "</button></div></div>";
   drawIcon();
-  $("nm").onchange = function(e){ set({ name: e.target.value.trim() || "Exacct AI" }); };
+  $("nm").onchange = function(e){ set({ name: e.target.value.trim() || "Expecct" }); };
   $("gl").oninput = function(e){ ic.glyph = e.target.value; drawIcon(); };
   each("[data-icol]", body, function(b){ b.onclick = function(){ ic.col = +b.dataset.icol; renderStyle(); }; });
   each("[data-ishape]", body, function(b){ b.onclick = function(){ ic.shape = b.dataset.ishape; renderStyle(); }; });
@@ -526,6 +583,15 @@ function renderStyle(){
     armed.reset = false; call("reset").then(function(s){ S = s; render(); toast("Settings reset"); });
   };
   $("wl").onclick = function(){ closePanel(); showWelcome(); };
+  each("[data-in]", body, function(b){ b.onclick = function(){ if (narrow()) closePanel(); call("signIn", b.dataset.in); }; });
+  each("[data-out]", body, function(b){ b.onclick = function(){
+    var k = "out" + b.dataset.out;
+    if (!armed[k]) { armed[k] = true; renderStyle(); setTimeout(function(){ armed[k] = false; if (open && tab === "style") renderStyle(); }, 2500); return; }
+    armed[k] = false; call("signOut", b.dataset.out);
+  }; });
+  if ($("upC")) $("upC").onclick = function(){ toast("Checking..."); call("update", "check"); };
+  if ($("upR")) $("upR").onclick = function(){ toast("Updating..."); call("update", "restart"); };
+  if ($("upO")) $("upO").onclick = function(){ call("update", "open"); };
   bindToggles(body);
 }
 
@@ -537,14 +603,18 @@ function showWelcome(){
   $("welcome").hidden = false; call("ui", { welcome: true }); drawWelcome();
 }
 function drawWelcome(){
-  var b = $("wbox"), dots = "<div class=\"dots\">" + [0,1,2,3,4].map(function(i){ return "<i class=\"" + (i === w.step ? "on" : "") + "\"></i>"; }).join("") + "</div>";
+  var b = $("wbox"), dots = "<div class=\"dots\">" + [0,1,2,3].map(function(i){ return "<i class=\"" + (i === w.step ? "on" : "") + "\"></i>"; }).join("") + "</div>";
   var back = w.step ? "<button class=\"link\" id=\"wb\">Back</button>" : "";
   var html = "";
   if (w.step === 0) html = "<img class=\"hero\" src=\"" + iconSrc() + "\" alt=\"\"><h1>Welcome to<br>" + esc(S.cfg.name) + "</h1><button class=\"big-btn\" id=\"wn\">Start</button>";
   if (w.step === 1) html = "<h1>Pick your AI</h1><div class=\"aipick\">" + S.ais.map(function(a){ return "<button data-wai=\"" + a.id + "\" class=\"" + (w.ai === a.id ? "on" : "") + "\"><i style=\"background:" + a.color + "\"></i>" + a.label + "</button>"; }).join("") + "</div><button class=\"big-btn\" id=\"wn\">Next</button>";
-  if (w.step === 2) html = "<h1>Name it</h1><input class=\"field\" id=\"wname\" maxlength=\"40\" value=\"" + esc(w.name) + "\" style=\"text-align:center;font-size:17px;font-weight:700\"><div class=\"row\" style=\"justify-content:center\">" + ACCENTS.map(function(a){ return "<button class=\"sw" + (w.accent === a ? " on" : "") + "\" data-wacc=\"" + a + "\" style=\"background:" + a + "\"></button>"; }).join("") + "</div><button class=\"big-btn\" id=\"wn\">Next</button>";
-  if (w.step === 3) html = "<h1>Pick a size</h1><div class=\"tiles wtiles\">" + WSIZES.map(function(k){ var r = TILES.filter(function(t){ return t[0] === k; })[0][1]; return tileHtml(k, r, w.size === k); }).join("") + "</div><button class=\"big-btn\" id=\"wn\">Next</button>";
-  if (w.step === 4) html = "<img class=\"hero\" src=\"" + iconSrc() + "\" alt=\"\"><h1>Log in once.<br>We remember you.</h1><button class=\"big-btn\" id=\"wn\">Open " + esc(aiOf(w.ai).label) + "</button>";
+  if (w.step === 2) html = "<h1>Pick a size</h1><div class=\"tiles wtiles\">" + WSIZES.map(function(k){ var r = TILES.filter(function(t){ return t[0] === k; })[0][1]; return tileHtml(k, r, w.size === k); }).join("") + "</div><button class=\"big-btn\" id=\"wn\">Next</button>";
+  if (w.step === 3) {
+    var on = (S.signed || {})[w.ai];
+    html = "<img class=\"hero\" src=\"" + iconSrc() + "\" alt=\"\"><h1>" + (on ? "You're signed in" : "Sign in once.<br>We remember you.") + "</h1>" +
+      "<button class=\"big-btn\" id=\"wn\">" + (on ? "Open " : "Sign in to ") + esc(aiOf(w.ai).label) + "</button>" +
+      (on ? "" : "<button class=\"link\" id=\"wskip\">Later</button><div class=\"muted\">Google sign-in blocked? Use <b>Continue with email</b>.</div>");
+  }
   b.innerHTML = "<div class=\"wstep\">" + html + dots + back + "</div>";
   document.documentElement.style.setProperty("--accent", w.accent);
   if ($("wb")) $("wb").onclick = function(){ w.step--; drawWelcome(); };
@@ -552,11 +622,15 @@ function drawWelcome(){
   each("[data-wai]", b, function(x){ x.onclick = function(){ w.ai = x.dataset.wai; drawWelcome(); }; });
   each("[data-wacc]", b, function(x){ x.onclick = function(){ w.accent = x.dataset.wacc; drawWelcome(); }; });
   each("[data-size]", b, function(x){ x.onclick = function(){ w.size = x.dataset.size; drawWelcome(); }; });
-  $("wn").onclick = function(){
-    if (w.step < 4) { w.step++; drawWelcome(); return; }
+  function finish(login){
     $("welcome").hidden = true;
-    set({ ai: w.ai, name: (w.name || "").trim() || "Exacct AI", accent: w.accent, size: w.size, position: "center", welcomed: true })
-      .then(function(){ call("ui", { welcome: false }); });
+    set({ ai: w.ai, size: w.size, position: "center", welcomed: true })
+      .then(function(){ call("ui", { welcome: false }); if (login) call("signIn", w.ai); });
+  }
+  if ($("wskip")) $("wskip").onclick = function(){ finish(false); };
+  $("wn").onclick = function(){
+    if (w.step < 3) { w.step++; drawWelcome(); return; }
+    finish((S.signed || {})[w.ai] === false);
   };
 }
 
@@ -566,6 +640,8 @@ window.exacct.on("history", function(h){ if (!S) return; S.history = h; if (open
 window.exacct.on("nav", function(n){ $("b-back").disabled = !n.canBack; });
 window.exacct.on("loading", function(l){ document.body.classList.toggle("loading", !!l); });
 window.exacct.on("toast", toast);
+window.exacct.on("find", openFind);
+window.exacct.on("found", function(r){ $("findN").textContent = r ? (r.total ? r.active + "/" + r.total : "0") : ""; });
 window.exacct.on("drawer", function(t){ togglePanel(t); });
 window.exacct.on("cols", function(c){ COLS = c; drawCols(); });
 call("state").then(function(s){ S = s; render(); if (!S.cfg.welcomed) showWelcome(); });
