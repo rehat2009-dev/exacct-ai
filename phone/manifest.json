@@ -1,6 +1,6 @@
 {
-  "name": "Exacct AI",
-  "short_name": "Exacct AI",
+  "name": "Expecct",
+  "short_name": "Expecct",
   "description": "ChatGPT, Claude and Gemini in one place.",
   "start_url": "./",
   "scope": "./",

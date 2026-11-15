@@ -7,8 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Exacct AI">
-<title>Exacct AI</title>
+<meta name="apple-mobile-web-app-title" content="Expecct">
+<title>Expecct</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -72,7 +72,7 @@ header b{font-size:19px;font-weight:800;letter-spacing:-.01em;flex:1}
 <div class="wrap">
   <header>
     <img id="logo" src="icon-192.png" alt="">
-    <b id="name">Exacct AI</b>
+    <b id="name">Expecct</b>
     <button class="icon-btn" id="styleBtn" aria-label="Style"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5l1.6 3.9 4 .3-3.1 2.6 1 4L8 10.1 4.5 12.3l1-4L2.4 5.7l4-.3z"/></svg></button>
   </header>
 
@@ -120,7 +120,8 @@ function $(id){ return document.getElementById(id); }
 function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]; }); }
 function load(k, d){ try { var v = JSON.parse(localStorage.getItem("exacct." + k)); return v == null ? d : v; } catch (e) { return d; } }
 function save(k, v){ try { localStorage.setItem("exacct." + k, JSON.stringify(v)); } catch (e) {} }
-var cfg = load("cfg", { name: "Exacct AI", accent: "#8b5cf6" });
+var cfg = load("cfg", { name: "Expecct", accent: "#8b5cf6" });
+if (cfg.name === "Exacct AI") cfg.name = "Expecct";
 var recent = load("recent", []);
 var tt;
 function toast(t){ var el = $("toast"); el.textContent = t; el.classList.add("show"); clearTimeout(tt); tt = setTimeout(function(){ el.classList.remove("show"); }, 2200); }
@@ -182,7 +183,7 @@ $("styleBtn").onclick = function(){
   });
   $("styleSheet").hidden = false;
 };
-$("nm").oninput = function(e){ cfg.name = e.target.value.trim() || "Exacct AI"; applyStyle(); };
+$("nm").oninput = function(e){ cfg.name = e.target.value.trim() || "Expecct"; applyStyle(); };
 $("styleDone").onclick = function(){ save("cfg", cfg); $("styleSheet").hidden = true; };
 $("styleSheet").onclick = function(e){ if (e.target.id === "styleSheet") $("styleDone").onclick(); };
 
