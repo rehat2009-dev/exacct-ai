@@ -62,7 +62,10 @@ button:disabled{opacity:.6;cursor:default;transform:none}
 <script>
 // The app opens this page with a random "state". After you log in, we send you back to the app
 // (expecct://auth) with that state and a key that lets the app's chat use your account.
-var state = new URLSearchParams(location.search).get("state") || "";
+var qs = new URLSearchParams(location.search);
+var state = qs.get("state") || "";
+// newer apps listen on this computer (127.0.0.1) for the login – no "Open app?" popup needed
+var port = /^\d{4,5}$/.test(qs.get("port") || "") && +qs.get("port") > 1023 && +qs.get("port") < 65536 ? qs.get("port") : "";
 function $(id){ return document.getElementById(id); }
 function show(id){ ["step1","step2","bad"].forEach(function(x){ $(x).hidden = x !== id; }); }
 if (!/^[a-f0-9]{16,64}$/.test(state)) show("bad");
@@ -73,8 +76,12 @@ function finish(){
   $("back").href = link;
   history.replaceState(null, "", location.pathname);
   show("step2");
+  if (port) { location.replace("http://127.0.0.1:" + port + "/auth#state=" + state + "&token=" + encodeURIComponent(tok)); return; }
   setTimeout(function(){ location.href = link; }, 300);
 }
+// already logged in on the website? Then the app logs in right away.
+function auto(){ if (/^[a-f0-9]{16,64}$/.test(state) && window.puter && puter.auth && puter.auth.isSignedIn()) finish(); }
+if (document.readyState === "complete") auto(); else addEventListener("load", auto);
 $("go").onclick = function(){
   if (!window.puter){ $("go").textContent = "Couldn't load – reload the page"; return; }
   $("go").disabled = true; $("go").textContent = "Logging in…";
