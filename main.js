@@ -4,6 +4,7 @@ const { app, BrowserWindow, WebContentsView, ipcMain, screen, Tray, Menu, native
 const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
+const http = require("http");
 const { spawn, execFile } = require("child_process");
 const pkg = require("./package.json");
 
@@ -457,25 +458,72 @@ function registerScheme() {
 }
 // "Log in with browser": your browser opens the Expecct website, you log in there,
 // and the website sends you back to the app with a key for the chat.
-function startLogin() {
+// The website hands the key back over a tiny local server on this computer (127.0.0.1),
+// like VS Code and GitHub's own apps do. The expecct:// link stays as a backup.
+let loginServer = null, loginTimer = null;
+function stopLoginServer() { clearTimeout(loginTimer); loginTimer = null; if (loginServer) { try { loginServer.close(); } catch {} loginServer = null; } }
+const LOGIN_DONE_PAGE = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Expecct</title>
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#09090c;color:#f3f3f6;font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;text-align:center}
+.b{padding:30px 26px;max-width:380px}.ok{width:52px;height:52px;border-radius:50%;margin:0 auto 14px;display:grid;place-items:center;background:rgba(52,211,153,.14);color:#34d399;font-size:26px}
+h1{font-size:21px;margin:0 0 6px}p{color:#8d8d99;margin:0}</style>
+<div class="b"><div class="ok" id="i">…</div><h1 id="h">Logging in…</h1><p id="p">One moment.</p></div>
+<script>
+var q=new URLSearchParams(location.hash.slice(1));history.replaceState(null,"",location.pathname);
+function say(i,h,p){document.getElementById("i").textContent=i;document.getElementById("h").textContent=h;document.getElementById("p").textContent=p;}
+fetch("/done",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({state:q.get("state")||"",token:q.get("token")||""})})
+.then(function(r){return r.json();}).then(function(r){ if(r.ok){say("✓","You're logged in","Go back to the Expecct app. You can close this tab.");setTimeout(function(){window.close();},1500);} else say("!","That didn't work",r.error||"Press Log in again in the app."); })
+.catch(function(){say("!","That didn't work","Press Log in again in the app.");});
+</script>`;
+function startLoginServer(state) {
+  stopLoginServer();
+  return new Promise(resolve => {
+    const srv = http.createServer((req, res) => {
+      const port = srv.address() && srv.address().port;
+      // only answer to our own address (blocks other websites pretending to be us)
+      if (req.headers.host !== "127.0.0.1:" + port) { res.writeHead(403); res.end(); return; }
+      const u = new URL(req.url, "http://127.0.0.1");
+      const head = { "Cache-Control": "no-store", "Referrer-Policy": "no-referrer", "X-Content-Type-Options": "nosniff" };
+      if (req.method === "GET" && u.pathname === "/auth") { res.writeHead(200, { ...head, "Content-Type": "text/html; charset=utf-8" }); res.end(LOGIN_DONE_PAGE); return; }
+      if (req.method === "POST" && u.pathname === "/done") {
+        if (!/^application\/json/.test(req.headers["content-type"] || "")) { res.writeHead(415); res.end(); return; }
+        let body = "";
+        req.on("data", c => { body += c; if (body.length > 10000) req.destroy(); });
+        req.on("end", () => {
+          let j = {}; try { j = JSON.parse(body); } catch {}
+          const r = acceptLogin(String(j.state || ""), String(j.token || ""));
+          res.writeHead(200, { ...head, "Content-Type": "application/json" });
+          res.end(JSON.stringify(r));
+          if (r.ok) setTimeout(stopLoginServer, 2000);
+        });
+        return;
+      }
+      res.writeHead(404, head); res.end();
+    });
+    srv.on("error", () => resolve(0));
+    srv.listen(0, "127.0.0.1", () => { loginServer = srv; loginTimer = setTimeout(stopLoginServer, 30 * 60 * 1000); resolve(srv.address().port); });
+  });
+}
+async function startLogin() {
   loginState = crypto.randomBytes(18).toString("hex");
   writeJson("login.json", { state: loginState, time: Date.now() });
   registerScheme();
-  shell.openExternal(LOGIN_URL + "?state=" + loginState);
+  const port = await startLoginServer(loginState);
+  shell.openExternal(LOGIN_URL + "?state=" + loginState + (port ? "&port=" + port : ""));
   return true;
+}
+function acceptLogin(state, token) {
+  const saved = loginState ? { state: loginState, time: Date.now() } : readJson("login.json", {});
+  if (!saved.state || state !== saved.state || Date.now() - (saved.time || 0) > 30 * 60 * 1000) { toast("That login link is old – press Log in again"); return { ok: false, error: "This login is old. Press Log in again in the app." }; }
+  if (!/^[\w.~+\/=-]{10,4000}$/.test(token)) { toast("Login didn't work – try again"); return { ok: false, error: "Login didn't work. Press Log in again in the app." }; }
+  loginState = null; writeJson("login.json", {});
+  pendingToken = token;
+  if (win) { showWin(); try { win.focus(); app.focus({ steal: true }); } catch {} openChat(cfg.page); deliverToken(); }
+  return { ok: true };
 }
 function handleLink(url) {
   let u; try { u = new URL(url); } catch { return; }
   if (u.protocol !== SCHEME + ":" || (u.hostname || u.pathname.replace(/^\/+/, "")).replace(/\/$/, "") !== "auth") return;
-  const saved = loginState ? { state: loginState, time: Date.now() } : readJson("login.json", {});
-  const state = u.searchParams.get("state"), token = u.searchParams.get("token") || "";
-  if (!saved.state || state !== saved.state || Date.now() - (saved.time || 0) > 30 * 60 * 1000) { toast("That login link is old – press Log in again"); return; }
-  if (!/^[\w.~+\/=-]{10,4000}$/.test(token)) { toast("Login didn't work – try again"); return; }
-  loginState = null; writeJson("login.json", {});
-  pendingToken = token;
-  if (!win) return;
-  showWin(); openChat(cfg.page);
-  deliverToken();
+  acceptLogin(u.searchParams.get("state") || "", u.searchParams.get("token") || "");
 }
 function deliverToken() {
   const pages = [chatView, agentView].filter(Boolean);
