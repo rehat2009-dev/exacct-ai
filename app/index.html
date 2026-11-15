@@ -494,7 +494,7 @@ function tail(id){ return String(id||"").split("/").pop().toLowerCase(); }
 function resolveModels(){
   if (modelsReady) return modelsReady;
   modelsReady = Promise.resolve().then(function(){ return puter.ai.listModels(); }).then(function(list){
-    list = list || [];
+    list = (list || []).slice().sort(function(x,y){ return (String(x.id).indexOf(":")>=0) - (String(y.id).indexOf(":")>=0); }); // direct models first
     AIS.forEach(function(a){
       var pref = MODELS[a.id], hit = null;
       for (var i=0;i<pref.length && !hit;i++) hit = list.filter(function(m){ return tail(m.id)===tail(pref[i]) || (m.aliases||[]).some(function(x){ return tail(x)===tail(pref[i]); }); })[0];
