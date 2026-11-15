@@ -127,12 +127,14 @@ a{color:inherit}
 
 @media(max-width:759px){
   .rail{display:none}
+  .desk{display:none!important}
+  .send.all{grid-column:1/-1}
   .wrap{padding-top:16px}
   .bar .logo{display:block}
   .sizes{display:none}
   .sends{grid-template-columns:repeat(3,1fr)}
 }
-@media(min-width:760px){.ais{display:none}}
+@media(min-width:760px){.phone{display:none!important}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -160,11 +162,11 @@ a{color:inherit}
     </div>
     <div class="hint">Opens in its own window, where you're already signed in.</div>
 
-    <div class="lbl desk" hidden>Window size</div>
-    <div class="sizes desk" id="sizes" hidden></div>
+    <div class="lbl desk">Window size</div>
+    <div class="sizes desk" id="sizes"></div>
 
-    <div class="lbl phone" hidden>Open</div>
-    <div class="ais phone" id="ais" hidden></div>
+    <div class="lbl phone">Open</div>
+    <div class="ais phone" id="ais"></div>
 
     <div class="lbl">Prompts</div>
     <div class="chips" id="prompts"></div>
@@ -280,8 +282,7 @@ function drawSizes(){
   $("sizes").innerHTML = SIZES.map(function(z){ var r=z[2]; return "<button class=\"sz"+(cfg.size===z[0]?" on":"")+"\" data-size=\""+z[0]+"\"><span class=\"scr\"><i style=\"left:"+r[0]+"%;top:"+r[1]+"%;width:"+r[2]+"%;height:"+r[3]+"%\"></i></span>"+z[1]+"</button>"; }).join("");
   Array.prototype.forEach.call(document.querySelectorAll("[data-size]"),function(b){ b.onclick=function(){ cfg.size=b.dataset.size; save("cfg",cfg); drawSizes(); toast(b.textContent+" – opens this size"); }; });
 }
-if (isPhone){ Array.prototype.forEach.call(document.querySelectorAll(".phone"),function(e){ e.hidden=false; }); }
-else { Array.prototype.forEach.call(document.querySelectorAll(".desk"),function(e){ e.hidden=false; }); drawSizes(); }
+drawSizes();
 
 /* prompts */
 $("prompts").innerHTML = PROMPTS.map(function(p,i){ return "<button class=\"chip\" data-p=\""+i+"\">"+esc(p[0])+"</button>"; }).join("");
