@@ -25,11 +25,15 @@ const SIZE_NAMES = { mini: "Mini", small: "Small", medium: "Medium", large: "Lar
 
 const defaultAi = AIS[pkg.exacctAi] ? pkg.exacctAi : "chatgpt";
 
-// keep settings and sign-ins from the old "Exacct AI" app
+// each app (ChatGPT, Claude, Gemini) keeps its own settings, so all three can run at once.
+// The first time, settings and sign-ins are copied over from the old "Exacct AI" app.
 if (process.env.EXPECCT_DATA) app.setPath("userData", process.env.EXPECCT_DATA);
-else {
-  const old = path.join(app.getPath("appData"), "Exacct AI " + AIS[defaultAi].label);
-  if (app.isPackaged && fs.existsSync(old)) app.setPath("userData", old);
+else if (app.isPackaged) {
+  const dir = path.join(app.getPath("appData"), "Expecct " + AIS[defaultAi].label);
+  const old = path.join(app.getPath("appData"), "Exacct AI");
+  const skip = /[\\/](Cache|Code Cache|GPUCache|DawnCache|DawnGraphiteCache|DawnWebGPUCache|GrShaderCache|ShaderCache|CacheStorage|Crashpad|SingletonLock|SingletonSocket|SingletonCookie|lockfile)$/;
+  try { if (!fs.existsSync(dir) && fs.existsSync(old)) fs.cpSync(old, dir, { recursive: true, filter: f => !skip.test(f) }); } catch (e) { console.error(e); }
+  app.setPath("userData", dir);
 }
 
 // look like a normal browser so sign-in pages work
