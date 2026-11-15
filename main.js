@@ -19,6 +19,11 @@ const railW = w => (w < 520 ? 52 : 68);
 const SITE = "https://rehat2009-dev.github.io/exacct-ai/";
 const REL = process.env.EXPECCT_REL || "https://github.com/rehat2009-dev/exacct-ai/releases/download/latest/";
 const BRAND = "Expecct";
+// the chat lives on the Expecct website, so it works the same in the app and in a browser
+const CHAT_URL = process.env.EXPECCT_CHAT || SITE + "app/?desktop=1";
+const CHAT_ORIGIN = new URL(CHAT_URL).origin;
+const LOGIN_URL = process.env.EXPECCT_LOGIN || SITE + "app/login.html";
+const SCHEME = "expecct";
 const HOTKEY = "CommandOrControl+Shift+Space";
 const FIXED = { mini: [380, 580], small: [460, 700], medium: [860, 760], large: [1200, 860], xl: [1500, 960] };
 const SIZE_NAMES = { mini: "Mini", small: "Small", medium: "Medium", large: "Large", xl: "Extra large", focus: "Focus", tall: "Tall side", left: "Left half", right: "Right half", left3: "Left third", right3: "Right third", top: "Top half", bottom: "Bottom half", full: "Full screen", custom: "Custom" };
@@ -56,7 +61,7 @@ const DEFAULTS = {
   accent: "#8b5cf6", theme: "aurora", icon: null,
   hotkey: true, startup: false, closeToTray: false, resume: true, keepSignedIn: true,
   welcomed: false, mini: null, lastUrl: {},
-  split: 1, ai2: null, goal: 0, goalDay: "", autoHide: false
+  split: 1, ai2: null, goal: 0, goalDay: "", autoHide: false, chatMode: true
 };
 const DEFAULT_PROMPTS = [
   { id: "p1", title: "Explain simply", text: "Explain this in simple words, like I'm 12:\n\n" },
@@ -81,6 +86,7 @@ const saveData = () => later("data", () => writeJson("data.json", data));
 // ---------- state ----------
 let win, tray;
 const views = {};
+let chatView = null, loginState = null, pendingToken = null;
 const ui = { drawer: false, welcome: false, ask: false };
 let placing = false, focused = null, dialogOpen = false, findText = "";
 let upd = null, updFile = null, updApp = null, signed = {};
@@ -97,7 +103,7 @@ function publicState() {
     cfg, isMac, hotkeyLabel: isMac ? "⌘ ⇧ Space" : "Ctrl + Shift + Space",
     ais: AI_KEYS.map(k => ({ id: k, label: AIS[k].label, color: AIS[k].color, icon: (data.icons || {})[k] || null })),
     sizeNames: SIZE_NAMES, history: data.history, stats: data.stats, prompts: data.prompts,
-    focused: focused || cfg.ai, cols: visibleAIs(), update: upd, signed, version: pkg.version, dark: nativeTheme.shouldUseDarkColors
+    focused: focused || cfg.ai, cols: visibleAIs(), chatMode: !!cfg.chatMode, update: upd, signed, version: pkg.version, dark: nativeTheme.shouldUseDarkColors
   };
 }
 
@@ -124,6 +130,16 @@ function layout() {
   const rail = railW(w);
   const drawerW = ui.drawer ? (w - rail - DRAWER < 320 ? w - rail : DRAWER) : 0;
   const left = rail + drawerW;
+  if (cfg.chatMode) {
+    const c = getChat();
+    for (const k of AI_KEYS) if (views[k]) views[k].setVisible(false);
+    const show = !ui.welcome && w - left > 0;
+    c.setVisible(show);
+    if (show) c.setBounds({ x: left, y: TOP, width: w - left, height: Math.max(0, h - TOP) });
+    send("cols", { cols: [], top: TOP, left, focused: "chat" });
+    return;
+  }
+  if (chatView) chatView.setVisible(false);
   const list = visibleAIs();
   list.forEach(k => getView(k));
   const head = TOP + (ui.ask ? ASKH : 0) + (ui.notice ? NOTICEH : 0);
@@ -195,6 +211,7 @@ function placeWindow() {
 function setZoom(z) {
   cfg.zoom = clamp(Math.round(z), 50, 200);
   for (const k of AI_KEYS) if (views[k]) views[k].webContents.setZoomFactor(cfg.zoom / 100);
+  if (chatView) chatView.webContents.setZoomFactor(cfg.zoom / 100);
   saveCfg(); send("state", publicState()); toast("Text size " + cfg.zoom + "%");
 }
 
@@ -255,6 +272,7 @@ function applyTheme() {
   const bg = "#09090b";
   if (win && !win.isDestroyed()) win.setBackgroundColor(bg);
   for (const k of AI_KEYS) if (views[k]) views[k].setBackgroundColor(bg);
+  if (chatView) chatView.setBackgroundColor(bg);
   if (win && !win.isDestroyed() && lastDark !== nativeTheme.shouldUseDarkColors) { lastDark = nativeTheme.shouldUseDarkColors; send("state", publicState()); }
 }
 let lastDark = null;
@@ -370,8 +388,87 @@ function getView(ai) {
   return v;
 }
 
+// ---------- chat (answers right inside Expecct) ----------
+function getChat() {
+  if (chatView) return chatView;
+  const v = new WebContentsView({ webPreferences: { partition: "persist:exacct", contextIsolation: true, sandbox: true, preload: path.join(__dirname, "chatpreload.js"), backgroundThrottling: false } });
+  v.setBackgroundColor("#09090b");
+  v.setVisible(false);
+  win.contentView.addChildView(v);
+  const wc = v.webContents;
+  wc.setWindowOpenHandler(({ url }) => {
+    let h = ""; try { h = new URL(url).hostname; } catch {}
+    // "Log in here": Puter's own sign-in window
+    if (h === "puter.com" || h.endsWith(".puter.com")) return { action: "allow", overrideBrowserWindowOptions: { width: 520, height: 720, autoHideMenuBar: true, backgroundColor: "#ffffff", parent: win } };
+    openExt(url); return { action: "deny" };
+  });
+  wc.on("will-navigate", (e, url) => { try { if (new URL(url).origin !== CHAT_ORIGIN) { e.preventDefault(); openExt(url); } } catch { e.preventDefault(); } });
+  wc.on("did-create-window", child => child.setMenuBarVisibility(false));
+  wc.on("before-input-event", onKeys);
+  wc.on("context-menu", (_e, p) => contextMenu(wc, p));
+  wc.on("did-finish-load", () => { wc.setZoomFactor(cfg.zoom / 100); if (pendingToken) deliverToken(); });
+  wc.on("did-fail-load", (_e, code, _d, url, main) => { if (main && code !== -3) setTimeout(() => { if (!wc.isDestroyed()) wc.loadURL(CHAT_URL).catch(() => {}); }, 4000); });
+  wc.loadURL(CHAT_URL).catch(() => {});
+  chatView = v;
+  return v;
+}
+function openChat() {
+  cfg.chatMode = true; saveCfg();
+  ui.notice = false;
+  layout(); send("state", publicState());
+  const c = getChat(); if (!ui.drawer) c.webContents.focus();
+  if (tray) buildTray();
+}
+function registerScheme() {
+  try {
+    if (process.defaultApp && process.argv[1]) app.setAsDefaultProtocolClient(SCHEME, process.execPath, [path.resolve(process.argv[1])]);
+    else app.setAsDefaultProtocolClient(SCHEME);
+  } catch (e) { console.error(e); }
+}
+// "Log in with browser": your browser opens the Expecct website, you log in there,
+// and the website sends you back to the app with a key for the chat.
+function startLogin() {
+  loginState = crypto.randomBytes(18).toString("hex");
+  writeJson("login.json", { state: loginState, time: Date.now() });
+  registerScheme();
+  shell.openExternal(LOGIN_URL + "?state=" + loginState);
+  return true;
+}
+function handleLink(url) {
+  let u; try { u = new URL(url); } catch { return; }
+  if (u.protocol !== SCHEME + ":" || (u.hostname || u.pathname.replace(/^\/+/, "")).replace(/\/$/, "") !== "auth") return;
+  const saved = loginState ? { state: loginState, time: Date.now() } : readJson("login.json", {});
+  const state = u.searchParams.get("state"), token = u.searchParams.get("token") || "";
+  if (!saved.state || state !== saved.state || Date.now() - (saved.time || 0) > 30 * 60 * 1000) { toast("That login link is old – press Log in again"); return; }
+  if (!/^[\w.~+\/=-]{10,4000}$/.test(token)) { toast("Login didn't work – try again"); return; }
+  loginState = null; writeJson("login.json", {});
+  pendingToken = token;
+  if (!win) return;
+  showWin(); openChat();
+  deliverToken();
+}
+function deliverToken() {
+  if (!pendingToken || !chatView || chatView.webContents.isLoading()) return;
+  chatView.webContents.send("puter-token", pendingToken);
+  pendingToken = null;
+  toast("You're logged in");
+}
+const linkIn = argv => (argv || []).find(a => typeof a === "string" && a.toLowerCase().startsWith(SCHEME + "://"));
+const CH = {
+  login: () => startLogin(),
+  open: ai => { if (AIS[ai]) switchAI(ai); },
+  ask: (ai, text) => { if (AIS[ai]) askOne(ai, String(text || "").slice(0, 20000)); },
+  version: () => pkg.version
+};
+ipcMain.handle("xc", (e, ch, ...a) => {
+  if (!chatView || e.sender !== chatView.webContents || !CH[ch]) return null;
+  try { if (new URL(e.senderFrame.url).origin !== CHAT_ORIGIN) return null; } catch { return null; }
+  return CH[ch](...a);
+});
+
 function switchAI(ai) {
   if (!AIS[ai]) return;
+  if (cfg.chatMode) { cfg.chatMode = false; if (chatView) chatView.setVisible(false); }
   if (cfg.split < 3) {
     if (cfg.split === 2 && visibleAIs()[1] === ai) cfg.ai2 = cfg.ai;
     cfg.ai = ai;
@@ -387,11 +484,13 @@ function switchAI(ai) {
 }
 
 function current() {
+  if (cfg.chatMode && chatView) return chatView.webContents;
   const k = visibleAIs().includes(focused) ? focused : cfg.ai;
   return views[k] && views[k].webContents;
 }
 
 function setSplit(n) {
+  cfg.chatMode = false;
   cfg.split = clamp(n, 1, 3);
   if (cfg.split === 2 && (!AIS[cfg.ai2] || cfg.ai2 === cfg.ai)) cfg.ai2 = AI_KEYS.find(k => k !== cfg.ai);
   saveCfg();
@@ -460,6 +559,7 @@ async function askOne(ai, text) {
 async function askAll(text) {
   text = String(text || "").trim();
   if (!text) return;
+  if (cfg.chatMode) { cfg.chatMode = false; saveCfg(); }
   if (cfg.split < 3) setSplit(3);
   toast("Asking ChatGPT, Claude and Gemini");
   const r = await Promise.all(AI_KEYS.map(k => sendTo(k, text)));
@@ -720,8 +820,14 @@ const H = {
   askOne: (ai, text) => askOne(ai, String(text || "").trim()),
   openAppWindow: ai => { if (!AIS[ai]) return; ui.notice = false; layout(); const r = openAppWindow(ai); toast("Opening " + AIS[ai].label + " in its own window"); return r; },
   closeNotice: () => { ui.notice = false; layout(); },
+  chat: () => openChat(),
   act: a => {
     const wc = current();
+    if (cfg.chatMode && chatView && (a === "home" || a === "reload" || a === "back")) {
+      if (a === "home") chatView.webContents.executeJavaScript("var b=document.getElementById('newBtn'); if (b) b.click();", true).catch(() => {});
+      if (a === "reload") chatView.webContents.reload();
+      return;
+    }
     if (a === "back" && wc && wc.navigationHistory.canGoBack()) wc.navigationHistory.goBack();
     if (a === "forward" && wc && wc.navigationHistory.canGoForward()) wc.navigationHistory.goForward();
     if (a === "reload" && wc) wc.reload();
@@ -839,7 +945,8 @@ function buildTray() {
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: "Show / hide " + cfg.name, click: toggleWindow },
     { type: "separator" },
-    ...AI_KEYS.map(k => ({ label: AIS[k].label, type: "radio", checked: cfg.ai === k, click: () => { showWin(); switchAI(k); } })),
+    { label: "Chat", type: "radio", checked: !!cfg.chatMode, click: () => { showWin(); openChat(); } },
+    ...AI_KEYS.map(k => ({ label: AIS[k].label, type: "radio", checked: !cfg.chatMode && cfg.ai === k, click: () => { showWin(); switchAI(k); } })),
     { type: "separator" },
     { label: "Size", submenu: sizes.map(s => ({ label: SIZE_NAMES[s], type: "radio", checked: cfg.size === s, click: () => H.set({ size: s }) })) },
     { label: "Mini mode", type: "checkbox", checked: !!cfg.mini, click: toggleMini },
@@ -862,7 +969,7 @@ function createWindow() {
   });
   win.loadFile(path.join(__dirname, "ui.html"));
   win.webContents.on("before-input-event", onKeys);
-  getView(cfg.ai);
+  if (cfg.chatMode) getChat(); else getView(cfg.ai);
   win.on("resize", layout);
   const remember = () => {
     if (placing || !win || win.isFullScreen() || win.isMaximized()) return;
@@ -898,9 +1005,12 @@ function createWindow() {
   win.webContents.on("did-finish-load", () => applySettings({ place: false }));
 }
 
+// links like expecct://auth?... come here (Mac: open-url, Windows: a second start of the app)
+let earlyLink = linkIn(process.argv);
+app.on("open-url", (e, url) => { e.preventDefault(); if (win) handleLink(url); else earlyLink = url; });
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
-  app.on("second-instance", () => showWin());
+  app.on("second-instance", (_e, argv) => { showWin(); const l = linkIn(argv); if (l) handleLink(l); });
   app.whenReady().then(() => {
     cfg = { ...DEFAULTS, ...readJson("settings.json", {}) };
     cfg.lastUrl = cfg.lastUrl || {};
@@ -919,6 +1029,8 @@ else {
     tray.on("click", toggleWindow);
     buildTray();
     createWindow();
+    registerScheme();
+    if (earlyLink) { const l = earlyLink; earlyLink = null; win.webContents.once("did-finish-load", () => handleLink(l)); }
     checkAuth();
     setTimeout(loadMissingIcons, 1500);
     setTimeout(() => checkUpdate(false), 8000);

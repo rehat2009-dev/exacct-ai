@@ -1,7 +1,7 @@
 {
   "name": "expecct",
   "productName": "Expecct",
-  "version": "3.2.3",
+  "version": "3.3.0",
   "description": "Expecct - ChatGPT, Claude and Gemini in their own window. Any size, any place, your style.",
   "main": "main.js",
   "author": "Expecct",
@@ -25,6 +25,7 @@
     "files": [
       "main.js",
       "preload.js",
+      "chatpreload.js",
       "ui.html",
       "icon.png",
       "package.json"
@@ -72,7 +73,15 @@
         "width": 560,
         "height": 380
       }
-    }
+    },
+    "protocols": [
+      {
+        "name": "Expecct",
+        "schemes": [
+          "expecct"
+        ]
+      }
+    ]
   },
   "repository": "https://github.com/rehat2009-dev/exacct-ai"
 }

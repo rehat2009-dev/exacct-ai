@@ -81,6 +81,12 @@ svg{width:18px;height:18px;flex:none}
 .ri.on .aic,.ri.vis .aic{opacity:1}
 .ri.on .aic{transform:scale(1.06);box-shadow:0 6px 16px color-mix(in srgb,var(--c) 45%,transparent)}
 .ri.vis:not(.on)::after{content:"";position:absolute;right:9px;top:8px;width:6px;height:6px;border-radius:50%;background:var(--fg)}
+.chic{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,var(--accent),var(--pink));opacity:.6;transition:opacity .2s,transform .2s}
+.chic svg{width:17px;height:17px}
+.ri:hover .chic{opacity:.9}
+.ri.on .chic{opacity:1;transform:scale(1.06);box-shadow:0 6px 16px color-mix(in srgb,var(--accent) 50%,transparent)}
+.chatmode #b-back,.chatmode #b-reload,.chatmode #b-signin,.chatmode #r-ask,.chatmode #b-new{display:none!important}
+.ri.vis:not(.on)::after,.ri .so{display:none!important}
 .rsep{width:28px;height:1px;background:var(--line);margin:6px 0}
 .grow{flex:1}
 .badge{position:absolute;right:8px;top:4px;min-width:16px;height:16px;border-radius:8px;padding:0 4px;background:var(--accent);color:#fff;font-size:10px;font-weight:800;display:grid;place-items:center}
@@ -242,6 +248,8 @@ kbd{font:600 11px/1 system-ui,sans-serif;background:var(--card2);border:1px soli
 <div class="loadbar"><i></i></div>
 
 <nav class="rail" id="rail" aria-label="Expecct">
+  <button class="ri" id="r-chat" title="Chat – answers right here in Expecct"><i class="chic"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z"/></svg></i><span>Chat</span></button>
+  <div class="rsep"></div>
   <div id="aiList" style="display:flex;flex-direction:column;align-items:center;gap:4px"></div>
   <div class="rsep"></div>
   <button class="ri" id="r-ask" title="Ask all 3 at once"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z"/><path d="M5.5 7h.01M8 7h.01M10.5 7h.01"/></svg><span>Ask all</span></button>
@@ -302,7 +310,9 @@ function render(){
   $("name").textContent = c.name; document.title = c.name;
   $("icon").src = iconSrc(); $("stageIcon").src = iconSrc();
   var a = aiOf(cur);
-  $("crumb").innerHTML = "<i style=\"background:" + a.color + "\"></i>" + esc(a.label);
+  document.body.classList.toggle("chatmode", !!S.chatMode);
+  $("crumb").innerHTML = S.chatMode ? "Chat" : "<i style=\"background:" + a.color + "\"></i>" + esc(a.label);
+  $("r-chat").classList.toggle("on", !!S.chatMode);
   $("b-mini").classList.toggle("on", !!c.mini);
   var list = $("aiList");
   if (!list.children.length) {
@@ -318,13 +328,13 @@ function render(){
   each(".ri.ai", list, function(b){
     var ax = aiOf(b.dataset.ai), cur0 = b.querySelector(".aic");
     if ((ax.icon || "") !== (b.dataset.icon || "")) { b.dataset.icon = ax.icon || ""; cur0.outerHTML = aicHtml(ax); }
-    b.classList.toggle("on", b.dataset.ai === cur);
+    b.classList.toggle("on", !S.chatMode && b.dataset.ai === cur);
     b.classList.toggle("vis", vis.length > 1 && vis.indexOf(b.dataset.ai) > -1);
     var out = sg[b.dataset.ai] === false, dot = b.querySelector(".so");
     if (out && !dot) b.insertAdjacentHTML("beforeend", "<b class=\"so\" title=\"Not signed in\"></b>");
     if (!out && dot) dot.remove();
   });
-  $("b-signin").hidden = sg[cur] !== false;
+  $("b-signin").hidden = S.chatMode || sg[cur] !== false;
   $("b-signin").title = "Sign in to " + a.label;
   var u = S.update;
   $("b-update").hidden = !u || (u.status !== "ready" && u.status !== "manual");
@@ -337,6 +347,8 @@ function render(){
   drawCols();
   if (open) renderPanel();
 }
+
+$("r-chat").onclick = function(){ if (open) closePanel(); call("chat"); };
 
 /* ---------- top bar ---------- */
 $("b-back").onclick = function(){ call("act", "back"); };
