@@ -175,6 +175,12 @@ svg{width:18px;height:18px;flex:none}
 .field{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 13px;outline:none;font-weight:700}
 .field:focus{border-color:var(--accent)}
 .swatches{display:flex;gap:10px;flex-wrap:wrap}
+.msel{display:flex;flex-direction:column;gap:8px}
+.msel b{font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.msel label{display:flex;align-items:center;gap:10px;font-weight:700;font-size:13.5px}
+.msel label span{width:70px;flex:none}
+.msel select{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 10px;color:var(--fg);font:inherit;font-size:13px;color-scheme:dark}
+.msel small{color:var(--muted);font-size:12px}
 .sw{width:32px;height:32px;border-radius:50%;border:2px solid transparent;transition:transform .2s}
 .sw.on{border-color:#fff;transform:scale(1.15)}
 .big{width:100%;padding:14px;border-radius:14px;background:#fff;color:#0a0a0d;font-weight:800;font-size:15px;transition:transform .15s}
@@ -255,6 +261,17 @@ svg{width:18px;height:18px;flex:none}
 .af svg{width:14px;height:14px}
 .send.stop{background:#fff;color:#0a0a0d}
 /* inside the Expecct desktop app */
+.desktop .bg{display:none}
+html.desktop,.desktop body{background:#0d0d0f}
+.desktop .composer{background:#161618;border-color:#2e2e33;border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.35)}
+.desktop .composer:focus-within{border-color:#45454d;box-shadow:0 8px 30px rgba(0,0,0,.35)}
+.desktop .send{background:#ececee;color:#0d0d0f;box-shadow:none;border-radius:9px;width:34px;height:34px}
+.desktop .send:hover{transform:scale(1.05)}
+.desktop .send.stop{background:#ececee}
+.desktop .card,.desktop .list,.desktop .chip{background:#161618;border-color:#232327;-webkit-backdrop-filter:none;backdrop-filter:none}
+.desktop .hello{background:none;-webkit-text-fill-color:#ececee;color:#ececee;font-weight:600;font-size:clamp(24px,4vw,30px);animation:rise .5s ease both}
+.desktop .pk.on{background:#ececee;color:#0d0d0f;border-color:#ececee}
+.desktop .you{background:#1c1c1f;border-color:#2e2e33;border-radius:12px}
 .desktop .rail,.desktop #installBtn,.desktop .desk,.desktop #signin,.desktop #name,.desktop .bar .logo{display:none!important}
 .desktop .bar{justify-content:flex-end;min-height:36px}
 .desktop .wrap{padding-top:14px}
@@ -290,7 +307,7 @@ svg{width:18px;height:18px;flex:none}
       <span class="nm" id="name">Expecct</span>
       <button class="pill" id="newBtn"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v10M3 8h10"/></svg>New chat</button>
       <button class="pill" id="installBtn"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M3 13.5h10"/></svg><span id="installT">Install</span></button>
-      <button class="round" id="styleBtn" aria-label="Style"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5l1.6 3.9 4 .3-3.1 2.6 1 4L8 10.1 4.5 12.3l1-4L2.4 5.7l4-.3z"/></svg></button>
+      <button class="round" id="styleBtn" aria-label="Settings" title="Settings and models"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5l1.6 3.9 4 .3-3.1 2.6 1 4L8 10.1 4.5 12.3l1-4L2.4 5.7l4-.3z"/></svg></button>
     </div>
 
     <h1 class="hello" id="hello">Hi there</h1>
@@ -336,9 +353,10 @@ svg{width:18px;height:18px;flex:none}
 </div></div>
 
 <div class="sheet" id="styleSheet" hidden><div>
-  <h2>Style</h2>
+  <h2>Settings</h2>
   <input class="field" id="nm" maxlength="24" aria-label="Name" placeholder="Name">
   <div class="swatches" id="accs"></div>
+  <div class="msel" id="modelSel"></div>
   <button class="big" id="styleDone">Done</button>
 </div></div>
 
@@ -509,7 +527,7 @@ var MODELS = {
 };
 var PICK_RE = { chatgpt:/gpt/i, claude:/claude/i, gemini:/gemini/i };
 var BAD_RE = /image|audio|tts|realtime|transcri|embed|search|banana|vision-preview|omni/i;
-var modelFor = {}, modelsReady = null;
+var modelFor = {}, modelsReady = null, allModels = [];
 function tail(id){ return String(id||"").split("/").pop().toLowerCase(); }
 function resolveModels(){
   if (modelsReady) return modelsReady;
@@ -523,7 +541,9 @@ function resolveModels(){
         hit = c.filter(function(m){ return /astra|mini|sonnet|flash/i.test(m.id); })[0] || c[0];
       }
       modelFor[a.id] = hit ? hit.id : pref[0];
+      if (cfg.models && cfg.models[a.id] && list.some(function(m){ return m.id===cfg.models[a.id]; })) modelFor[a.id] = cfg.models[a.id];
     });
+    allModels = list.filter(function(m){ var id=String(m.id); return id.indexOf(":")<0 && !BAD_RE.test(id) && !/codex/i.test(id); });
   }).catch(function(){ AIS.forEach(function(a){ modelFor[a.id] = MODELS[a.id][0]; }); });
   return modelsReady;
 }
@@ -775,7 +795,21 @@ function drawRecent(){
 }
 
 /* style */
+function drawModelSel(){
+  var el=$("modelSel");
+  if (!allModels.length){ el.innerHTML = window.puter && puter.auth && puter.auth.isSignedIn() ? "<small>Loading models…</small>" : "<b>Models</b><small>Log in (send one message) to pick from every model you can use.</small>"; return; }
+  var tier=function(m){ var c=m.cost&&m.cost.input; return c==null?"":c<100?"  ·  $":c<500?"  ·  $$":"  ·  $$$"; };
+  el.innerHTML = "<b>Models</b>" + AIS.map(function(a){
+    var mine = allModels.filter(function(m){ return PICK_RE[a.id].test(m.id); }).sort(function(x,y){ return String(y.id).localeCompare(String(x.id),undefined,{numeric:true}); });
+    var chosen = (cfg.models||{})[a.id] || "";
+    return "<label><span>"+a.label+"</span><select data-ms=\""+a.id+"\"><option value=\"\">Best pick ("+esc(String(modelFor[a.id]||"").split("/").pop())+")</option>"+
+      mine.map(function(m){ return "<option value=\""+esc(m.id)+"\""+(m.id===chosen?" selected":"")+">"+esc(m.name||m.id)+tier(m)+"</option>"; }).join("")+"</select></label>";
+  }).join("") + "<small>$ cheap · $$$ uses your free credit faster</small>";
+  each("[data-ms]",function(sel){ sel.onchange=function(){ cfg.models=cfg.models||{}; if (sel.value) cfg.models[sel.dataset.ms]=sel.value; else delete cfg.models[sel.dataset.ms]; save("cfg",cfg); modelsReady=null; resolveModels().then(drawModelSel); toast("Model saved"); }; });
+}
 $("styleBtn").onclick=function(){
+  if (window.puter && puter.auth && puter.auth.isSignedIn()) resolveModels().then(drawModelSel);
+  drawModelSel();
   $("nm").value=cfg.name;
   $("accs").innerHTML=ACCENTS.map(function(a){ return "<button class=\"sw"+(cfg.accent===a?" on":"")+"\" data-acc=\""+a+"\" style=\"background:"+a+"\" aria-label=\"Colour\"></button>"; }).join("");
   each("[data-acc]",function(b){ b.onclick=function(){ cfg.accent=b.dataset.acc; applyStyle(); each("[data-acc]",function(x){ x.classList.toggle("on",x===b); }); }; });
