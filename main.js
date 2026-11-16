@@ -48,7 +48,7 @@ const CHROME_MAJOR = String(process.versions.chrome || "130").split(".")[0];
 const OS_PART = isMac ? "Macintosh; Intel Mac OS X 10_15_7" : process.platform === "win32" ? "Windows NT 10.0; Win64; x64" : "X11; Linux x86_64";
 const CHROME_UA = "Mozilla/5.0 (" + OS_PART + ") AppleWebKit/537.36 (KHTML, like Gecko) Chrome/" + CHROME_MAJOR + ".0.0.0 Safari/537.36";
 const isGoogleLogin = url => { try { return new URL(url).hostname === "accounts.google.com"; } catch { return false; } };
-const isGoogleSignin = url => { try { const u = new URL(url); return u.hostname === "accounts.google.com" && /^\/(signin|ServiceLogin|o\/oauth2|AccountChooser|InteractiveLogin|v3\/signin|ServiceLoginAuth)/i.test(u.pathname); } catch { return false; } };
+const isGoogleSignin = url => { try { const u = new URL(url); return u.hostname === "accounts.google.com" && /^\/(signin|ServiceLogin|o\/oauth2|AccountChooser|InteractiveLogin|v3\/signin|ServiceLoginAuth|gsi\/select|gsi\/transform)/i.test(u.pathname); } catch { return false; } };
 app.userAgentFallback = CHROME_UA;
 
 // who is signed in (checked from cookies)
@@ -390,6 +390,10 @@ function getView(ai) {
   const nav = () => { if (ai === cfg.ai) send("nav", { canBack: wc.navigationHistory.canGoBack(), canFwd: wc.navigationHistory.canGoForward() }); record(ai, wc); };
   wc.on("did-navigate", nav);
   wc.on("did-navigate-in-page", nav);
+  // on the sign-in page: say right away that Google sign-in needs the browser window
+  const hint = () => setTimeout(() => { if (!wc.isDestroyed() && isLoginPage(ai, wc.getURL()) && signed[ai] !== true && ai === cfg.ai && !cfg.chatMode) loginHint(ai); }, 600);
+  wc.on("did-navigate", hint);
+  wc.on("did-navigate-in-page", hint);
   wc.on("page-title-updated", () => record(ai, wc));
   wc.on("page-favicon-updated", (_e, favs) => { if (onHost(ai, wc.getURL()) || wc.getURL().startsWith("data:")) loadIcon(ai, favs); });
   wc.on("did-start-loading", () => { if (ai === cfg.ai) send("loading", true); });
@@ -961,6 +965,8 @@ function keepCookies() {
   const ses = session.fromPartition("persist:exacct");
   ses.cookies.on("changed", (_e, c, _cause, removed) => {
     if (removed || !c.session || !cfg.keepSignedIn) return;
+    if (c.partitionKey || /csrf|state|callback|nonce|pkce|verifier|challenge|login|^__cf|^_cf|^cf_|turnstile/i.test(c.name)) return;
+    if (!AI_KEYS.some(k => AUTH[k].ok(c))) return;
     const host = String(c.domain || "").replace(/^\./, "");
     if (!host) return;
     const d = { url: "https://" + host + (c.path || "/"), name: c.name, value: c.value, path: c.path || "/", secure: c.secure, httpOnly: c.httpOnly,
@@ -1079,21 +1085,38 @@ function setupDownloads(s) {
     });
   });
   // microphone (voice chat), notifications and copy buttons
-  const OK = ["media", "notifications", "clipboard-read", "clipboard-sanitized-write", "fullscreen", "pointerLock"];
+  const OK = ["media", "notifications", "clipboard-read", "clipboard-sanitized-write", "fullscreen", "pointerLock", "storage-access", "top-level-storage-access", "persistent-storage"];
   s.setPermissionRequestHandler((_wc, perm, cb) => cb(OK.includes(perm)));
   s.setPermissionCheckHandler((_wc, perm) => OK.includes(perm));
 }
 
 // ---------- Google sign-in ----------
+function isLoginPage(ai, url) {
+  try {
+    const u = new URL(url), h = u.hostname;
+    if (ai === "chatgpt") return h === "auth.openai.com" || ((h === "chatgpt.com" || h === "chat.openai.com") && /^\/auth\//.test(u.pathname));
+    if (ai === "claude") return h === "claude.ai" && /^\/login/.test(u.pathname);
+  } catch {}
+  return false;
+}
+let hintShown = {};
+function loginHint(ai) {
+  if (ui.notice === ai || Date.now() - (hintShown[ai] || 0) < 60 * 1000) return;
+  hintShown[ai] = Date.now();
+  ui.notice = ai; layout();
+  send("notice", { ai, label: AIS[ai].label, browser: browserName(), hint: true });
+}
+function browserName() {
+  const exe = findBrowser();
+  return exe ? (/msedge/i.test(exe) ? "Edge" : /brave/i.test(exe) ? "Brave" : /chromium/i.test(exe) ? "Chromium" : "Chrome") : "";
+}
 function googleBlocked(ai, wc, stay) {
   const main = views[ai] && views[ai].webContents === wc;
   if (!main) { const w = BrowserWindow.fromWebContents(wc); if (w && w !== win) w.close(); }
   else if (!stay && wc.navigationHistory.canGoBack()) wc.navigationHistory.goBack();
   if (!AIS[ai]) return;
-  const exe = findBrowser();
-  const browser = exe ? (/msedge/i.test(exe) ? "Edge" : /brave/i.test(exe) ? "Brave" : /chromium/i.test(exe) ? "Chromium" : "Chrome") : "";
   ui.notice = ai; layout();
-  send("notice", { ai, label: AIS[ai].label, browser });
+  send("notice", { ai, label: AIS[ai].label, browser: browserName() });
   if (win) showWin();
 }
 // Opens the AI in Chrome or Edge as its own app window, where Google sign-in works.

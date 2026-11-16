@@ -271,7 +271,7 @@ kbd{font:600 11px/1 system-ui,sans-serif;background:var(--card2);border:1px soli
 <div class="stage"><img id="stageIcon" alt=""></div>
 <form class="ask" id="ask" hidden><input id="askIn" placeholder="Ask ChatGPT, Claude and Gemini at once" autocomplete="off"><button class="go" type="submit">Ask all</button><button class="tb" type="button" id="askX" title="Close"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m4 4 8 8M12 4l-8 8"/></svg></button></form>
 <div class="cols" id="cols" hidden></div>
-<div class="notice" id="notice" hidden><i class="gl">!</i><p><b>Google doesn't allow sign-in inside apps</b><span id="noticeT"></span></p><button class="go2" id="noticeEmail" hidden>Use email</button><button class="go" id="noticeOpen">Open in browser window</button><button class="tb" id="noticeX" title="Close"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m4 4 8 8M12 4l-8 8"/></svg></button></div>
+<div class="notice" id="notice" hidden><i class="gl">!</i><p><b id="noticeB">Google doesn't allow sign-in inside apps</b><span id="noticeT"></span></p><button class="go2" id="noticeEmail" hidden>Use email</button><button class="go" id="noticeOpen">Open in browser window</button><button class="tb" id="noticeX" title="Close"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m4 4 8 8M12 4l-8 8"/></svg></button></div>
 
 <aside class="panel" id="panel" aria-label="Panel">
   <div class="phead"><h2 id="ptitle">Chats</h2><button class="tb" id="p-close" title="Close (Esc)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m4 4 8 8M12 4l-8 8"/></svg></button></div>
@@ -693,7 +693,8 @@ window.exacct.on("notice", function(d){
   noticeAi = d.ai;
   var g = d.ai === "gemini";
   var b = d.browser || "your browser";
-  $("noticeT").textContent = "Logged in to " + d.label + " in " + b + "? Open it in its own " + b + " window – you're already logged in there." + (g ? "" : " Or log in with email here.");
+  $("noticeB").textContent = d.hint ? "Log in with Google? Use " + b : "Google doesn't allow sign-in inside apps";
+  $("noticeT").textContent = d.hint ? "Google blocks its sign-in inside apps. Open " + d.label + " in its own " + b + " window – if you're logged in there, it just works." : "Logged in to " + d.label + " in " + b + "? Open it in its own " + b + " window – you're already logged in there." + (g ? "" : " Or log in with email here.");
   $("noticeOpen").textContent = "Open in " + b + " window";
   $("noticeEmail").hidden = g;
   placeNotice(); $("notice").hidden = false;
