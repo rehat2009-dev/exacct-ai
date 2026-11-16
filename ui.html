@@ -692,7 +692,9 @@ function placeNotice(){ var n = $("notice"); n.style.left = COLS.left + "px"; n.
 window.exacct.on("notice", function(d){
   noticeAi = d.ai;
   var g = d.ai === "gemini";
-  $("noticeT").textContent = g ? "Open Gemini in its own Chrome or Edge window and sign in with Google there." : "Use “Continue with email” on the sign-in page, or open " + d.label + " in its own browser window.";
+  var b = d.browser || "your browser";
+  $("noticeT").textContent = "Logged in to " + d.label + " in " + b + "? Open it in its own " + b + " window – you're already logged in there." + (g ? "" : " Or log in with email here.");
+  $("noticeOpen").textContent = "Open in " + b + " window";
   $("noticeEmail").hidden = g;
   placeNotice(); $("notice").hidden = false;
 });

@@ -48,6 +48,7 @@ const CHROME_MAJOR = String(process.versions.chrome || "130").split(".")[0];
 const OS_PART = isMac ? "Macintosh; Intel Mac OS X 10_15_7" : process.platform === "win32" ? "Windows NT 10.0; Win64; x64" : "X11; Linux x86_64";
 const CHROME_UA = "Mozilla/5.0 (" + OS_PART + ") AppleWebKit/537.36 (KHTML, like Gecko) Chrome/" + CHROME_MAJOR + ".0.0.0 Safari/537.36";
 const isGoogleLogin = url => { try { return new URL(url).hostname === "accounts.google.com"; } catch { return false; } };
+const isGoogleSignin = url => { try { const u = new URL(url); return u.hostname === "accounts.google.com" && /^\/(signin|ServiceLogin|o\/oauth2|AccountChooser|InteractiveLogin|v3\/signin|ServiceLoginAuth)/i.test(u.pathname); } catch { return false; } };
 app.userAgentFallback = CHROME_UA;
 
 // who is signed in (checked from cookies)
@@ -329,7 +330,13 @@ function setupContents(wc, ai) {
   };
   wc.on("did-finish-load", checkGoogle);
   wc.on("did-navigate-in-page", checkGoogle);
+  // "Continue with Google": Google always says no inside apps, so say so right away instead of
+  // showing a page that does nothing, and offer the user's own browser, where they're already logged in.
+  const stopGoogle = (e, url) => { if (!isGoogleSignin(url)) return; e.preventDefault(); googleBlocked(ai, wc, true); };
+  wc.on("will-navigate", stopGoogle);
+  wc.on("will-redirect", stopGoogle);
   wc.setWindowOpenHandler(({ url }) => {
+    if (isGoogleSignin(url)) { googleBlocked(ai, wc, true); return { action: "deny" }; }
     let h = ""; try { h = new URL(url).hostname; } catch {}
     const login = LOGIN_HOSTS.some(d => h === d || h.endsWith("." + d));
     if (login || onHost(ai, url)) return { action: "allow", overrideBrowserWindowOptions: { width: 520, height: 700, autoHideMenuBar: true, backgroundColor: "#ffffff", webPreferences: { partition: "persist:exacct" } } };
@@ -1078,12 +1085,15 @@ function setupDownloads(s) {
 }
 
 // ---------- Google sign-in ----------
-function googleBlocked(ai, wc) {
+function googleBlocked(ai, wc, stay) {
   const main = views[ai] && views[ai].webContents === wc;
   if (!main) { const w = BrowserWindow.fromWebContents(wc); if (w && w !== win) w.close(); }
-  else if (wc.navigationHistory.canGoBack()) wc.navigationHistory.goBack();
+  else if (!stay && wc.navigationHistory.canGoBack()) wc.navigationHistory.goBack();
+  if (!AIS[ai]) return;
+  const exe = findBrowser();
+  const browser = exe ? (/msedge/i.test(exe) ? "Edge" : /brave/i.test(exe) ? "Brave" : /chromium/i.test(exe) ? "Chromium" : "Chrome") : "";
   ui.notice = ai; layout();
-  send("notice", { ai, label: AIS[ai].label });
+  send("notice", { ai, label: AIS[ai].label, browser });
   if (win) showWin();
 }
 // Opens the AI in Chrome or Edge as its own app window, where Google sign-in works.
