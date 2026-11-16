@@ -61,6 +61,8 @@ jobs:
 
   release:
     needs: build
+    # publish what did build, even if GitHub had no Mac machine free this time
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -74,6 +76,7 @@ jobs:
             const fs = require("fs"), crypto = require("crypto");
             const files = {};
             for (const f of fs.readdirSync("out")) files[f] = crypto.createHash("sha256").update(fs.readFileSync("out/" + f)).digest("hex");
+            if (!Object.keys(files).some(f => f.endsWith(".exe"))) { console.error("nothing was built"); process.exit(1); }
             const version = require("./package.json").version;
             fs.writeFileSync("out/version.json", JSON.stringify({ version, files }, null, 2));
             console.log(version, Object.keys(files));
