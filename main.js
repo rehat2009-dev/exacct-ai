@@ -390,10 +390,23 @@ function getView(ai) {
   const nav = () => { if (ai === cfg.ai) send("nav", { canBack: wc.navigationHistory.canGoBack(), canFwd: wc.navigationHistory.canGoForward() }); record(ai, wc); };
   wc.on("did-navigate", nav);
   wc.on("did-navigate-in-page", nav);
-  // on the sign-in page: say right away that Google sign-in needs the browser window
-  const hint = () => setTimeout(() => { if (!wc.isDestroyed() && isLoginPage(ai, wc.getURL()) && signed[ai] !== true && ai === cfg.ai && !cfg.chatMode) loginHint(ai); }, 600);
-  wc.on("did-navigate", hint);
-  wc.on("did-navigate-in-page", hint);
+  // on the sign-in page: say right away that Google sign-in needs the browser window,
+  // and notice when the page hangs on "Connecting…" so it can be repaired
+  let checkRun = 0;
+  const pageCheck = () => {
+    const run = ++checkRun;
+    [2500, 12000].forEach(ms => setTimeout(async () => {
+      if (run !== checkRun || wc.isDestroyed() || signed[ai] === true || ai !== cfg.ai || cfg.chatMode) return;
+      let r = {};
+      try { r = await wc.executeJavaScript(LOGIN_PROBE, true) || {}; } catch {}
+      if (ms > 5000 && r.stuck) { loginStuck(ai); return; }
+      if (r.login || isLoginPage(ai, wc.getURL())) loginHint(ai);
+    }, ms));
+  };
+  wc.on("did-finish-load", pageCheck);
+  wc.on("did-navigate-in-page", pageCheck);
+  wc.on("console-message", (e) => { const m = e && (e.message || ""); if (e && (e.level === "error" || e.level === 3)) logDiag(ai, "console: " + String(m).slice(0, 200)); });
+  wc.on("did-fail-load", (_e, code, desc, url, main) => { if (code !== -3) logDiag(ai, "fail-load " + code + " " + desc + " " + String(url).slice(0, 120) + (main ? " (page)" : "")); });
   wc.on("page-title-updated", () => record(ai, wc));
   wc.on("page-favicon-updated", (_e, favs) => { if (onHost(ai, wc.getURL()) || wc.getURL().startsWith("data:")) loadIcon(ai, favs); });
   wc.on("did-start-loading", () => { if (ai === cfg.ai) send("loading", true); });
@@ -1099,12 +1112,53 @@ function isLoginPage(ai, url) {
   } catch {}
   return false;
 }
+// looks at the AI's page: is it a sign-in screen, and is it hanging on "Connecting…"?
+const LOGIN_PROBE = `(function(){
+  var b = Array.prototype.slice.call(document.querySelectorAll('button,[role=button],a'));
+  var txt = function(x){ return (x.innerText || x.textContent || '').trim(); };
+  var login = b.some(function(x){ return /google/i.test(txt(x)) && /(continue|fortsett|weiter|continuer|continuar|log ?in|sign ?in)/i.test(txt(x)); });
+  var stuck = b.some(function(x){ return /^(kobler til|connecting|verbinden|verbindung|connexion|conectando|collegamento|ansluter|forbinder)/i.test(txt(x)) && (x.disabled || x.getAttribute('aria-disabled') === 'true' || x.getAttribute('data-loading') !== null || true); });
+  return { login: login, stuck: stuck };
+})()`;
 let hintShown = {};
 function loginHint(ai) {
-  if (ui.notice === ai || Date.now() - (hintShown[ai] || 0) < 60 * 1000) return;
+  if (ui.notice === ai || Date.now() - (hintShown[ai] || 0) < 10 * 60 * 1000) return;
   hintShown[ai] = Date.now();
   ui.notice = ai; layout();
   send("notice", { ai, label: AIS[ai].label, browser: browserName(), hint: true });
+}
+let stuckShown = {};
+function loginStuck(ai) {
+  if (Date.now() - (stuckShown[ai] || 0) < 2 * 60 * 1000) return;
+  stuckShown[ai] = Date.now();
+  logDiag(ai, "stuck on Connecting at " + (views[ai] ? views[ai].webContents.getURL().slice(0, 120) : ""));
+  ui.notice = ai; layout();
+  send("notice", { ai, label: AIS[ai].label, browser: browserName(), stuck: true });
+}
+// a short log of what went wrong on the AI pages (copied only when you press "Copy details")
+const diag = [];
+function logDiag(ai, line) { diag.push(new Date().toISOString().slice(11, 19) + " " + ai + " " + line); if (diag.length > 40) diag.shift(); }
+// "Repair": forget everything Expecct saved for this AI (cookies, storage, cache) and load it fresh
+async function repairAI(ai, quiet) {
+  if (!AIS[ai]) return false;
+  const s = ses();
+  const doms = AUTH[ai].domains.concat(["cloudflare.com", "challenges.cloudflare.com"]);
+  for (const c of await s.cookies.get({})) {
+    const d = String(c.domain || "").replace(/^\./, "");
+    if (doms.some(x => d === x || d.endsWith("." + x))) await s.cookies.remove((c.secure ? "https://" : "http://") + d + (c.path || "/"), c.name).catch(() => {});
+  }
+  const origins = new Set([new URL(AIS[ai].url).origin]);
+  AUTH[ai].domains.forEach(d => { origins.add("https://" + d); origins.add("https://auth." + d); });
+  for (const o of origins) await s.clearStorageData({ origin: o, storages: ["cookies", "localstorage", "indexdb", "serviceworkers", "cachestorage", "shadercache", "websql", "filesystem"] }).catch(() => {});
+  await s.clearCache().catch(() => {});
+  await s.clearHostResolverCache().catch(() => {});
+  delete cfg.lastUrl[ai]; saveCfg();
+  ui.notice = false; layout();
+  stuckShown[ai] = 0; hintShown[ai] = 0;
+  if (views[ai]) views[ai].webContents.loadURL(AIS[ai].url).catch(() => {});
+  await checkAuth();
+  if (!quiet) toast(AIS[ai].label + " repaired – loading fresh");
+  return true;
 }
 function browserName() {
   const exe = findBrowser();
@@ -1187,6 +1241,8 @@ const H = {
   askOne: (ai, text) => askOne(ai, String(text || "").trim()),
   openAppWindow: ai => { if (!AIS[ai]) return; ui.notice = false; layout(); const r = openAppWindow(ai); toast("Opening " + AIS[ai].label + " in its own window"); return r; },
   closeNotice: () => { ui.notice = false; layout(); },
+  repairAI: ai => repairAI(ai),
+  copyDiag: () => { clipboard.writeText("Expecct " + pkg.version + " " + process.platform + " chrome " + process.versions.chrome + "\n" + (diag.join("\n") || "(nothing logged)")); toast("Details copied – paste them in the chat"); return true; },
   chat: page => openChat(page),
   act: a => {
     const wc = current();
@@ -1402,7 +1458,13 @@ else {
     createWindow();
     registerScheme();
     if (earlyLink) { const l = earlyLink; earlyLink = null; win.webContents.once("did-finish-load", () => handleLink(l)); }
-    checkAuth();
+    // once: older versions stretched every login-step cookie to 30 days, which can leave a
+    // sign-in page hanging on "Connecting…". Start fresh for the AIs you aren't signed in to.
+    checkAuth().then(async () => {
+      if (cfg.fixedLoginCookies) return;
+      for (const k of AI_KEYS) if (signed[k] === false) await repairAI(k, true).catch(() => {});
+      cfg.fixedLoginCookies = true; saveCfg();
+    });
     setTimeout(loadMissingIcons, 1500);
     setTimeout(() => checkUpdate(false), 8000);
     setInterval(() => checkUpdate(false), 4 * 60 * 60 * 1000);
